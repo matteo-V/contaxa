@@ -5,12 +5,15 @@
 # library(RColorBrewer)
 # library(colorRamps)
 
-#'@name get_education_factor_order
-#'@depends annotate_factor_with_n
-#'@author matteo-V
-#'@param dat dataframe with education factor levels (with annotation) to reorder
-#'@param strat_var
-#'@return vector of factor levels ordered by decreasing education
+#' Get education factor order
+#'
+#' @author matteo-V
+#' @param dat dataframe with education factor levels (with annotation) to reorder
+#' @param strat_var stratification variable
+#' @return vector of factor levels ordered by decreasing education
+#' @importFrom dplyr %>% select
+#' @importFrom stringr str_extract
+#' @export
 get_education_factor_order <- function(dat, strat_var){
 
   strat_levels <-
@@ -33,12 +36,13 @@ get_education_factor_order <- function(dat, strat_var){
   return(c(none_level, primary_level, secondary_level, college_level))
   }
 
-
-#'@name get_age_ntile_factor_order
-#'@depends select_demo_dat
-#'@param human_dat EIDITH human data table, filtered for country of interest for plotting
-#'@return ordered character vector of age_quint_range levels
-#'@author matteo-V
+#' Get age quantile factor order
+#'
+#' @param human_dat EIDITH human data table, filtered for country of interest for plotting
+#' @return ordered character vector of age_quint_range levels
+#' @author matteo-V
+#' @importFrom dplyr %>% select filter
+#' @importFrom stringr str_extract
 get_age_ntile_factor_order <- function(dat, human_dat){
 
   #build demo dat
@@ -85,13 +89,13 @@ get_age_ntile_factor_order <- function(dat, human_dat){
 }
 
 
-#'@name plot_contact_wrap_heatmap
-#'@function to plot heatmap wrapped by contact type
-#'@helper plot_contaxa_heatmap
-#'@param strat_var varaible to use on y axis
-#'@param factor_order used by plot_contaxa_heatmap to order plotting factors
-#'@return unstyled heatmap to be faceted by plot_contaxa_heatmap
-#'@author matteo-V
+#' Plot heatmap wrapped by contact type
+#' @param strat_var varaible to use on y axis
+#' @param factor_order used by plot_contaxa_heatmap to order plotting factors
+#' @return unstyled heatmap to be faceted by plot_contaxa_heatmap
+#' @author matteo-V
+#' @import ggplot2
+#' @export
 plot_contact_wrap_heatmap <- function(contaxa_dat, strat_var, factor_order=NULL){
   ggplot(data = contaxa_dat,
          color = 'gray',
@@ -122,11 +126,12 @@ plot_contact_wrap_heatmap <- function(contaxa_dat, strat_var, factor_order=NULL)
     )
   }
 
-#'@name plot_strat_wrap_heatmap
-#'@function create heat map of contx_type X taxa_type
-#'@param contaxa_data data passed to
-#'@return heatmap to be faceted by plot_contaxa_heatmap
-#'@author matteo-V
+#' Create heat map of contx_type X taxa_type
+#' @param contaxa_data data passed to
+#' @return heatmap to be faceted by plot_contaxa_heatmap
+#' @author matteo-V
+#' @import ggplot2
+#' @export
 plot_strat_wrap_heatmap <- function(contaxa_dat){
   ggplot(data = contaxa_dat,
          color = 'gray',
@@ -156,13 +161,15 @@ plot_strat_wrap_heatmap <- function(contaxa_dat){
 }
 
 
-#'@author matteo-V
-#'@param dat contaxa dataframe of frequencies by stratification variable
-#'@param strat string of variable name for stratification
-#'@param human_dat (optional) used for ordering plots by age_quinte_range
-#'@depends get_factor_order
-#'@prototype heatmap function for viz
-#'@return ggplot2 heatmap object
+#' Main heatmap function
+#' @author matteo-V
+#' @param dat contaxa dataframe of frequencies by stratification variable
+#' @param strat string of variable name for stratification
+#' @param human_dat (optional) used for ordering plots by age_quinte_range
+#' @return ggplot2 heatmap object
+#' @import ggplot2
+#' @importFrom stingr str_detect
+#' @importFrom dplyr %>%
 plot_contaxa_heatmap <- function(dat, strat, human_dat = NULL, wrap_contact = T){
 
   if(wrap_contact){

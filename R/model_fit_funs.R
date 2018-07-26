@@ -17,11 +17,16 @@
 
 #######################################################################################
 ####################### get exposure response data function ###########################
-#'@function create cleaned, binary response frame for contx_type
-#'@param dat raw data frame, prefereably passed through select_country_dat
-#'@param taxa_names character vector of taxa names
-#'@return wide data frame with binary exposures of interest
-#'@author matteo-V
+#' Create cleaned, binary response frame for contx_type
+#' @param dat raw data frame, prefereably passed through select_country_dat
+#' @param taxa_names character vector of taxa names
+#' @return wide data frame with binary exposures of interest
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select rename
+#' @importFrom eidith e2_expand_wide
+#' @importFrom rlang !! sym :=
+#' @importFrom plyr join_all
 get_clean_exposures <- function(dat, taxa_names){
 
   #create final list for plyr join_all
@@ -61,11 +66,13 @@ get_clean_exposures <- function(dat, taxa_names){
 
 ###############################################################################
 #################### get covariate data function ##############################
-#'@name get_clean_illness_covars
-#'@function: create and widen covariate data for self reported illness modeling
-#'@param dat a raw human table from EIDITH which to clean
-#'@return wide data set with data types cleaned for regression analysis
-#'@author matteo-V
+#' Create and widen covariate data for self reported illness modeling
+#' @param dat a raw human table from EIDITH which to clean
+#' @return wide data set with data types cleaned for regression analysis
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select matches mutate mutate_at mutate_if add_count
+#' @importFrom eidith ed2_expand_wide
 get_clean_illness_covariates <- function(dat){
   #select and widen covariate data
   dat %>%
@@ -211,11 +218,14 @@ get_clean_illness_covariates <- function(dat){
 ####################################################################################
 ######################## get symptoms response data function #######################
 
-#'@function obtain and flatten self reported symptom outcome data
-#'@param dat data frame for which to obtain self-reported outcomes
-#'@param of_interest logical indicating to only select outcomes of interest as per analysis plan
-#'@return data frame (tibble) with self reported illness widened to dichotomous variables
-#'@author matteo-V
+#' Obtain and flatten self reported symptom outcome data
+#' @param dat data frame for which to obtain self-reported outcomes
+#' @param of_interest logical indicating to only select outcomes of interest as per analysis plan
+#' @return data frame (tibble) with self reported illness widened to dichotomous variables
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select
+#' @importFrom eidith ed2_expand_wide
 get_self_reports <- function(dat, of_interest = T){
   if(!of_interest){ #if not of interest outcomes
   dat %>%
@@ -257,12 +267,12 @@ get_self_reports <- function(dat, of_interest = T){
 #############################################################################################
 ################################## crosstab function ##########################################
 
-#'@function: crosstab, run fisher test (robust to small counts) and output p-value
-#'@name run_crosstab
-#'@param condition for which to test independence
-#'@param outcome the outcome variable of interest
-#'@return p value of fisher test
-#'@author matteo-V
+#' Crosstab, run fisher test (robust to small counts) and output p-value
+#' @param condition for which to test independence
+#' @param outcome the outcome variable of interest
+#' @return p value of fisher test
+#' @author matteo-V
+#' @importFrom stats fisher.test
 run_crosstab <- function(dat, condition, outcome){
   #fisher test is robust to small counts
   fisher.test( table(dat[,condition], dat[,outcome]) )$p.val
@@ -275,13 +285,15 @@ run_crosstab <- function(dat, condition, outcome){
 
 ################################################################################################
 ###################################### run contaxa crosstab function ###########################
-#'@function run crosstab for exposures (taxa contacts)
-#'@depends run_crosstab
-#'@param analysis_dat cleaned covariate data
-#'@param condition_var variable on which to condition (test) for the exposures
-#'@param alpha the alpha value for which to assess significance
-#'@return data frame of results for condition, taxa, contact type, p-value and significance (bonferroni corrected)
-#'@author matteo-V
+#' Run crosstab for exposures (taxa contacts)
+#' @param analysis_dat cleaned covariate data
+#' @param condition_var variable on which to condition (test) for the exposures
+#' @param alpha the alpha value for which to assess significance
+#' @return data frame of results for condition, taxa, contact type, p-value and significance (bonferroni corrected)
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select matches data_frame mutate
+#' @importFrom stringr str_remove_all str_remove
 run_contaxa_crosstab <- function(analysis_dat, condition_var, alpha = 0.05){
 
   #get unique contact types from data set
@@ -351,10 +363,11 @@ run_contaxa_crosstab <- function(analysis_dat, condition_var, alpha = 0.05){
 ###############################################################################################
 ############################# Train test val split function ###################################
 
-#'@function train_test_val
-#'@param dat dataframe to split for training
-#'@return named list of data frames
-#'@author matteo-V
+#' Train test val split function
+#' @param dat dataframe to split for training
+#' @return named list of data frames
+#' @author matteo-V
+#' @export
 train_test_split <- function(dat){
   #empty list for data frames
   res <- list()
@@ -377,14 +390,17 @@ train_test_split <- function(dat){
 #################################################################################################
 ############################# create illness analysis frame function ############################
 
-#'@function creates data frame ready for random forest
-#'@depends get_clean_exposures
-#'@depends get_self_reports
-#'@depends get_clean_illness_covariates
-#'@param dat data frame from which to create analysis data set created from get_self_reports or get_contaxa
-#'@param outcome_var outcome variable of interest keyword (sari, ili, encehpalitis or hemorrhagic)
-#'@param taxa_names vector of taxa types for which exposures willbe included
-#'@author matteo-V
+#' Create illness analysis frame
+#'
+#' Creates data frame ready for random forest
+#' @param dat data frame from which to create analysis data set created from get_self_reports or get_contaxa
+#' @param outcome_var outcome variable of interest keyword (sari, ili, encehpalitis or hemorrhagic)
+#' @param taxa_names vector of taxa types for which exposures willbe included
+#' @author matteo-V
+#' @importFrom dplyr %>% select mutate
+#' @importFrom rlang !! sym :=
+#' @importFrom plyr join_all
+#' @export
 get_illness_analysis_dat <- function(dat,
                                        outcome_var,
                                        taxa_names = c('rodents', 'nhp', 'bats', 'swine', 'poultry')){
@@ -430,10 +446,11 @@ get_illness_analysis_dat <- function(dat,
 ##############################################################################################
 ############################## remove_colinear_columns #######################################
 
-#'@name remove_colinear_columns
-#'@function uses matrix rank algorithm to remove linearly dependent columns from data
-#'@param dat data frame generated by get_XXX_analysis_frame
-#'@return named list of removed variable names (removed_vars) and matrix for lasso modeling (data_matrix)
+#' Use matrix rank algorithm to remove linearly dependent columns from data
+#' @param dat data frame generated by get_XXX_analysis_frame
+#' @return named list of removed variable names (removed_vars) and matrix for lasso modeling (data_matrix)
+#' @export
+#' @importFrom  Matrix rankMatrix
 remove_colinear_columns <- function(dat){
   outcome <- dat[,1]
   outcome_var <- colnames(dat)[1]

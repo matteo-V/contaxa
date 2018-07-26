@@ -14,11 +14,14 @@
 
 ###################################################################
 
-#'@function to filter country data by country codes
-#'@return full data set, filtered by countries of interest
-#'@param dat human data table from EIDITH
-#'@param country_codes a vector of 2 digit country codes of interest
-#'@author matteo-V
+#' Filter country data by country codes
+#' @return full data set, filtered by countries of interest
+#' @param dat human data table from EIDITH
+#' @param country_codes a vector of 2 digit country codes of interest
+#' @author matteo-V
+#' @importFrom stringr str_flatten str_detect
+#' @importFrom dplyr filter %>%
+#' @export
 select_country_dat <- function(dat, country_codes){
 
   #build country regex from passed character vector
@@ -30,11 +33,15 @@ select_country_dat <- function(dat, country_codes){
     filter(str_detect(event_name, country_regex)==T)  #filter event_names by regex
 }
 
-#'@function to select taxa contact cols by taxa names
-#'@returns participantID (key) and taxa columns of interest
-#'@param dat is the data set from which to select taxa columns
-#'@param taxa_types a vector of taxa names of interest
-#'@author matteo-V
+#' Select taxa contact cols by taxa names
+#'
+#' @return participantID (key) and taxa columns of interest
+#' @param dat is the data set from which to select taxa columns
+#' @param taxa_types a vector of taxa names of interest
+#' @author matteo-V
+#' @importFrom stringr str_flatten
+#' @importFrom dplyr %>% select matches
+#' @export
 select_taxa_dat <- function(human_dat, taxa_types){
   #build taxa regex
   taxa_regex <- taxa_types %>%
@@ -45,13 +52,12 @@ select_taxa_dat <- function(human_dat, taxa_types){
     select(participant_id, matches(taxa_regex))
 }
 
-#'@function to get colnames from list of taxa
-#'@return colnames for taxa data of interest
-#'@depend ed2_human
-#'@helper reshape_contaxa_data function
-#'@param human_dat is the data set from which to select taxa columns
-#'@param taxa_types a vector of taxa names of interest
-#'@author matteo-V
+#' Get colnames from list of taxa
+#' @return colnames for taxa data of interest
+#' @param human_dat is the data set from which to select taxa columns
+#' @param taxa_types a vector of taxa names of interest
+#' @author matteo-V
+#' @noRd
 get_taxa_colnames <- function(human_dat, taxa_types){
   #build taxa regex
   taxa_regex <- taxa_types %>%
@@ -64,13 +70,14 @@ get_taxa_colnames <- function(human_dat, taxa_types){
     colnames()
 }
 
-#'@name get_concurrent_sites
-#'@function to get concurrent site names for within country visualizations
-#'@depend ed2_human & ed2_event
-#'@param human_dat from ed2_human
-#'@param event_dat from ed2_event
-#'@return human_dat frame with concurrent sites added
-#'@author matteo-V
+#' Get concurrent site names for within country visualizations
+#' @param human_dat from ed2_human
+#' @param event_dat from ed2_event
+#' @return human_dat frame with concurrent sites added
+#' @author matteo-V
+#' @importFrom eidith ed2_events
+#' @importFrom dplyr select join %>%
+#' @export
 get_concurrent_sites <- function(human_dat){
 
   sites_dat <-
@@ -81,12 +88,13 @@ get_concurrent_sites <- function(human_dat){
 
 }
 
-#'@name get_country_codes
-#'@function creates varaible with two letter country code for cross country viz
-#'@depend ed2_human
-#'@param human_dat EIDITH human table with event_name
-#'@return human_dat frame with country code added
-#'@author matteo-V
+#' Create varaible with two letter country code for cross country viz
+#' @param human_dat EIDITH human table with event_name
+#' @return human_dat frame with country code added
+#' @author matteo-V
+#' @importFrom dplyr mutate %>%
+#' @importFrom stringr str_extract str_remove
+#' @export
 get_country_codes <- function(human_dat){
   human_dat %>%
     mutate(country = str_extract(event_name, '[A-Z]{2}-')) %>%
@@ -94,13 +102,15 @@ get_country_codes <- function(human_dat){
 
   }
 
-#'@name get_clean_occupations
-#'@function creates new variables occupation using all pertinent data from survey, can also aggregate rare
-#'@param human_dat EIDITH human data table
-#'@param aggregateRate logical indicating whether uncommon occupations should be aggregated
-#'@param threshold number below which a occupation is considered 'rare'
-#'@return human data table with new occupation column
-#'@author matteo-V
+#' Create new variables occupation using all pertinent data from survey, can also aggregate rare
+#' @param human_dat EIDITH human data table
+#' @param aggregateRate logical indicating whether uncommon occupations should be aggregated
+#' @param threshold number below which a occupation is considered 'rare'
+#' @return human data table with new occupation column
+#' @author matteo-V
+#' @importFrom dplyr %>% mutate if_else select add_count
+#' @importFrom stringr str_detect
+#' @export
 get_clean_occupations <- function(human_dat,
                                   aggregate_rare = T,
                                   threshold = 10,
@@ -166,13 +176,16 @@ get_clean_occupations <- function(human_dat,
 ###################################################################
 ################# reshape contaxa data function ###################
 
-#'@function function to unnest and restructure taxa contact cols into
-#'@depends get_taxa_colnames function
-#'@depends select_taxa_dat function
-#'@param dat returned from select_taxa_dat function
-#'@param taxa vector of taxa types of interest
-#'@author: matteo-V
-#'@return dataframe with participant_id (key), taxa_type, contx_type, and aggregate sum
+#' Unnest and restructure taxa contact cols into
+#'
+#' @param dat returned from select_taxa_dat function
+#' @param taxa vector of taxa types of interest
+#' @author: matteo-V
+#' @return dataframe with participant_id (key), taxa_type, contx_type, and aggregate sum
+#' @importFrom dplyr %>% select mutate mutate_at rename
+#' @importFrom tidyr unnest
+#' @importFrom stringr str_flatten
+#' @export
 reshape_contaxa_data <- function(dat, taxa){
 
   #empty list for dataframes
@@ -228,12 +241,11 @@ reshape_contaxa_data <- function(dat, taxa){
 # tst_join_dat <- join(tst_contaxa_fn, tst_demo, by='participant_id')
 ####################################################################
 ############ age quintiles functions ###############################
-#'@name quintiles
-#'@function generates non-overlapping age ntiles
-#'@param x age variable
-#'@param m number of ntiles to generate
-#'@helper to get age quintiles
-#'@function to generate non-overlapping quintiles
+
+#' Generates non-overlapping age ntiles
+#' @param x age variable
+#' @param m number of ntiles to generate
+#' @noRd
 ntiles <- function(x, m = 5){
   qrt <- quantile(x,probs=seq(0, 1, 1/m) )
   y <- x
@@ -242,12 +254,12 @@ ntiles <- function(x, m = 5){
 }
 
 #TODO: could this be a general variable quintile function
-#'@name get_age_quitiles
-#'@depend quintiles function
-#'@function to annotate dataframe with age quintiles
-#'@param dat EIDITH demographic dataframe which to annotate (must contain age column)
-#'@param ntiles passed to quntiles function
-#'@author matteo-V
+#' Annotate dataframe with age quintiles
+#' @param dat EIDITH demographic dataframe which to annotate (must contain age column)
+#' @param ntiles passed to quntiles function
+#' @author matteo-V
+#' @importFrom dplyr %>% mutate group_by ungroup
+#' @export
 get_age_ntiles <- function(dat, ntiles = 5){
   #create age quintile column
   dat %>%
@@ -262,14 +274,13 @@ get_age_ntiles <- function(dat, ntiles = 5){
 ######################################################
 #############demo select function ##################################
 
-#'@name select_demo_dat
-#'@function to select demographic vars from data
-#'@param dat EIDITH human dataframe from which to select variables
-#'@depend get_age_quintiles to calculate age quintiles
-#'@depens ed2_human
-#'@return dataframe of demographic data and participantID (key)
-#'@author matteo-V
-
+#' Select demographic vars from data
+#' @param dat EIDITH human dataframe from which to select variables
+#' @return dataframe of demographic data and participantID (key)
+#' @author matteo-V
+#' @importFrom eidith ed2_human
+#' @importFrom dplyr %>% select
+#' @export
 select_demo_dat <- function(dat){
   #select demo vars of interest for joining
   dat %>%
@@ -294,12 +305,12 @@ select_demo_dat <- function(dat){
 #######################################################
 ############## join contaxa and demo data ################
 
-#'@name join_contx_and_demo
-#'@function to join contx data and demo data
-#'@depends reshape_contaxa_data & select_demo_dat
-#'@param contx_dat from reshape_contaxa_data function
-#'@param demo_dat from select_demo_dat function
-#'@returns joined contaxa  and demographic variables frames
+#' Join contx data and demo data
+#' @param contx_dat from reshape_contaxa_data function
+#' @param demo_dat from select_demo_dat function
+#' @return joined contaxa  and demographic variables frames
+#' @importFrom dplyr join
+#' @export
 join_contx_and_demo <- function(contx_dat, demo_dat){
   #join dat on unique ID
   join(contx_dat, #longest data frame first for left join
@@ -330,13 +341,12 @@ join_contx_and_demo <- function(contx_dat, demo_dat){
 #########################################################################
 ######### calc total respondents function ####################################
 
-#'@name calc_total_repondents
-#'@depend select_demo_dat function
-#'@param demo_dat from select_demo_dat function
-#'@param var_name stratification variable name
-#'@param var_val stratification variable value
-#'@function returns total number of respondents where var_name == var_val
-#'@author matteo-V
+#' Return total number of respondents where var_name == var_val
+#' @param demo_dat from select_demo_dat function
+#' @param var_name stratification variable name
+#' @param var_val stratification variable value
+#' @author matteo-V
+#' @importFrom dplyr %>% filter group_by summarise select
 calc_total_respondents <- function(demo_dat, var_name, var_val){
   #calculate number of respondents by var == var_val
   demo_dat %>%
@@ -351,13 +361,15 @@ calc_total_respondents <- function(demo_dat, var_name, var_val){
 ###################################################################################
 #### get variable values helper for expanding crossprod functions #################
 
-#'@name get_var_vals
-#'@helper to get values of variables easily
-#'@param dat dataframe from join_contx_and_demo
-#'@param var_name variable for which to retrieve values
-#'@function for expand_contaxa and calc_respondents functions to get variable values
-#'@return vector of variable levels
-#'@author matteo-V
+#' Get variable values helper for expanding crossprod functions
+#'
+#' for expand_contaxa and calc_respondents functions
+#' @name get_var_vals
+#' @param dat dataframe from join_contx_and_demo
+#' @param var_name variable for which to retrieve values
+#' @return vector of variable levels
+#' @author matteo-V
+#' @noRd
 get_var_vals <- function(dat, var_name){
   dat %>%
     ungroup() %>%
@@ -370,13 +382,14 @@ get_var_vals <- function(dat, var_name){
 ##################################################################################################
 ############################### general calculate respondents function ###########################
 
-#'@name cal_percent_respondents_by_var
-#'@function to calculate percent of respondents with contx_type X taxa_type by stratification var
-#'@depend select_demo_dat
-#'@param contaxa_dat joined dataframe from join_contx_and_demo
-#'@param demo_dat dataframe from select_demo_dat that was used in join_contx_and_demo function
-#'@param var_name stratification variable name (character type)
-#'@return dataframe with percent of respondents normalized by stratification variable count
+#' Calculate percent of respondents with contx_type X taxa_type by stratification var
+#' @param contaxa_dat joined dataframe from join_contx_and_demo
+#' @param demo_dat dataframe from select_demo_dat that was used in join_contx_and_demo function
+#' @param var_name stratification variable name (character type)
+#' @return dataframe with percent of respondents normalized by stratification variable count
+#' @importFrom dplyr %>% group_by summarise mutate_at rename if_else
+#' @importFrom rlang !! sym
+#' @export
 calc_percent_repondents_by_var <- function(contaxa_dat,
                                            demo_dat,
                                            var_name){
@@ -429,12 +442,16 @@ calc_percent_repondents_by_var <- function(contaxa_dat,
 #                                  var_name = 'age_quint_range')
 #####################################################################################
 ########################### general expand contaxa by variable function #############
-#'@name expand_contaxa_crossprod_by_var
-#'@function fill in dataframe with all crossprods of (contx_type X taxa_type)
-#'@param dat dataframe returned from calc_percent_respondents_by_var function
-#'@param var_name variable name used for stratification  as character
-#'@returns dataframe with full crossproduct of (contx_type X taxa_type) filled in for viz functions
-#'@author matteo-V
+
+#' General expand contaxa by variable function
+#'
+#' Fill in dataframe with all crossprods of (contx_type X taxa_type)
+#' @param dat dataframe returned from calc_percent_respondents_by_var function
+#' @param var_name variable name used for stratification  as character
+#' @return dataframe with full crossproduct of (contx_type X taxa_type) filled in for viz functions
+#' @author matteo-V
+#' @importFrom dplyr %>%
+#' @importFrom replyr replyr_coalesce
 expand_contaxa_by_var <- function(dat, var_name){
 
   #create support grid of crossprods for replyr_coalesce
@@ -468,13 +485,12 @@ expand_contaxa_by_var <- function(dat, var_name){
 ########################################################################################
 ################################### annotate group N function ##########################
 
-#'@name annotate_group_n
-#'@depend ed2_human()
-#'@param dat human_dat from ed2_human
-#'@param var_name stratification variable name as character
-#'@param var_val used to iterate over values of strat variable
-#'@return dataframe with (N=XX) appended to the stratification variable
-#'@author matteo-V
+#' @param dat human_dat from ed2_human
+#' @param var_name stratification variable name as character
+#' @param var_val used to iterate over values of strat variable
+#' @return dataframe with (N=XX) appended to the stratification variable
+#' @author matteo-V
+#' @noRd
 annotate_group_n <- function(demo_dat, var_name, var_val){
   #calculate and create string of N value
   paste0(' (N=',
@@ -482,13 +498,15 @@ annotate_group_n <- function(demo_dat, var_name, var_val){
          ')' )
 }
 
-#'@name annotate_factor_with_n
-#'@depend annotate_group_n
-#'@param var_name variable for which to append (N=XX)
-#'@param human_dat from ed2_human used to calculate N
-#'@param contaxa_data dataframe from reshape_contaxa_data joined with demographic variables
-#'@return dataframe with (N=XX) appended to var_name
-#'@author matteo-V
+#' Annotate factor labels with number of observations
+#' @param var_name variable for which to append (N=XX)
+#' @param human_dat from ed2_human used to calculate N
+#' @param contaxa_data dataframe from reshape_contaxa_data joined with demographic variables
+#' @return dataframe with (N=XX) appended to var_name
+#' @author matteo-V
+#' @importFrom dplyr %>% mutate
+#' @importFrom rlang !! sym :=
+#' @export
 annotate_factor_with_n <- function(contaxa_dat, var_name, demo_dat){
   #get variable values to iterate over
   var_vals <- contaxa_dat %>% get_var_vals(var_name = var_name)
