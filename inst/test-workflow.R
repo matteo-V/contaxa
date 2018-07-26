@@ -1,7 +1,7 @@
 # from dana_manip_funs.R
-
+options(ed_sql_path = "data/PREDICT2data.sqlite")
 devtools::load_all()
-
+library(eidith)
 library(plyr)
 library(tidyverse)
 library(replyr) #for coalesce to fill in missing crossprods
