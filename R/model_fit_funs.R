@@ -1,8 +1,10 @@
+########################################################################################
 library(glmnet)
 library(plyr) #for join_all
 library(tidyverse)
 library(foreach)
 library(Matrix)
+library(selectiveInference)
 ######################### import example data ##########################################
 #download human questionnaire data for all countries
 dat <- ed2_human()
@@ -10,7 +12,7 @@ dat <- ed2_human()
 #subset BD dat for analysis
 BD_dat <-
   dat %>%
-  select_country_dat(country_codes = 'BD')
+  select_country_dat(country_codes = 'BD') #from data_manip_funs.R
 
 
 #######################################################################################
@@ -49,9 +51,9 @@ get_clean_exposures <- function(dat, taxa_names){
 }
 
 ###############################################################################
-###############################################################################
+################################# test clean exposures ########################
 
-#test clean exposures
+
 BD_contacts_dat <-
   BD_dat %>%
   get_clean_exposures(taxa_names = c('bats', 'nhp', 'swine', 'poultry', 'rodents'))
@@ -435,9 +437,11 @@ ili_model_dat <-
 remove_colinear_columns <- function(dat){
   outcome <- dat[,1]
   outcome_var <- colnames(dat)[1]
-  form <- as.formula(paste0(outcome_var, ' ~ ', ' + ', '.', ' + ', '(.)^2'))
-  model_matrix <- model.matrix(form, data = dat)
-  #model_matrix <- data.matrix(dat[,-1])
+  #TODO: test rank reduce algo on full data matrix (with interactions)
+  #TODO: allow users to specify interactions
+  #form <- as.formula(paste0(outcome_var, ' ~ ', ' + ', '.', ' + ', '(.)^2'))
+  #model_matrix <- model.matrix(form, data = dat)
+  model_matrix <- data.matrix(dat[,-1])
   mat_rank <- rankMatrix(model_matrix[,-1]) #rank of matrix without outcome variable
   cat('Matrix Rank: ', mat_rank)
   var_names <- colnames(model_matrix) #remove outcome varaible name
@@ -469,13 +473,14 @@ remove_colinear_columns <- function(dat){
 
 #test function
 res <- ili_model_dat %>% remove_colinear_columns()
+
 #output logical test that algo works
 cat('Rank matches number of columns?',
     ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix))
 
+#create matrix of
 ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
 ############################# LASSO Regularized Logistic Regression ##########################
-library(glmnet)
 
 #illness_model_dat_split <- train_test_split(illness_model_dat)
 #get optimal lambda
@@ -512,14 +517,14 @@ lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
 lasso.conf.matrix
 1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
 
-library(selectiveInference)
-#TODO: figure out why this is broken
+
 #glmnet multiplies the first term by a factor of 1/n
 betas = coef(lasso.fit,
              s = lam/n,
              exact = T,
              x = ili_x_matrix ,
              y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
+
 #perform inference for glmnet (LASSO) model
 lasso.inference <-
   fixedLassoInf(x = ili_x_matrix,
@@ -527,6 +532,6 @@ lasso.inference <-
                 beta = betas,
                 lambda = lam
   )
-lasso.inference$lambda
+
 
 ###############################################################################################
