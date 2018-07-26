@@ -3,13 +3,15 @@ library(semPlot)
 ####################################################################################################
 alldat_covars <-
   dat %>%
-  get_clean_illness_covariates()
+  get_clean_illness_covariates() %>%
+  mutate_if(is.logical, as.numeric)
 
 extra_dat <-
   dat %>% select(participant_id,
                  dedicated_location_for_waste,
                  food_storage_containers) %>%
-  ed2_expand_wide(food_storage_containers)
+  ed2_expand_wide(food_storage_containers) %>%
+  mutate_if(is.logical, as.numeric) #convert to numeric for prediction
 
 wash_predict_dat <- join(extra_dat, alldat_covars, by='participant_id')
 
@@ -24,7 +26,7 @@ shared_water_last_year +
 scratched_bitten_action_nothing_kept_working
 '
 #fit wash model
-wash.fit <- sem(model = wash.model, data = pd_dat )
+wash.fit <- sem(model = wash.model, data = alldat_covars )
 
 #summarize
 summary(wash.fit, standardized = T, fit.measures = T, rsquare = T)
@@ -40,8 +42,7 @@ semPaths(wash.fit,
          what = 'std',
          nCharNodes = 25,
          sizeMan = 15,
-         sizeMan2 = 10
-         )
+         sizeMan2 = 10)
 
 #predict wash indicator, need to subset dataframe to only include relevant variables
 pd_dat <-
@@ -49,13 +50,12 @@ pd_dat <-
                          drinking_water_source_uncovered_well_pond_river,
                          water_used_by_animals,
                          shared_water_last_year,
-                         scratched_bitten_action_nothing_kept_working) %>%
-  mutate_if(is.logical, as.numeric)
+                         scratched_bitten_action_nothing_kept_working)
 
 
-#create wash data
+#create wash_index data with key
 wash_dat <-
-  alldat_covars %>%
+  pd_dat %>%
   mutate(wash_index = lavPredict(wash.fit)) %>%
   select(participant_id, wash_index)
 
@@ -74,8 +74,6 @@ all_demo_dat <-
          ) %>%
   get_clean_occupations() %>%
   select(-primary_livelihood, -livelihood_groups_other)
-
-
 
 #join wash data to demographic data
 wash_viz_dat <-
