@@ -1,9 +1,9 @@
-library(tidyverse) #interactive beauty
-library(plotly) #interactive beauty
-library(ggthemes) #pretty fivethirtyeight theme
-library(viridis)
-library(RColorBrewer)
-library(colorRamps)
+# library(tidyverse) #interactive beauty
+# library(plotly) #interactive beauty
+# library(ggthemes) #pretty fivethirtyeight theme
+# library(viridis)
+# library(RColorBrewer)
+# library(colorRamps)
 
 #'@name get_education_factor_order
 #'@depends annotate_factor_with_n

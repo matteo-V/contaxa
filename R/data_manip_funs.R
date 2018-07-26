@@ -1,16 +1,16 @@
-library(plyr)
-library(tidyverse)
-library(replyr) #for coalesce to fill in missing crossprods
-
-#download all human tables
-dat <- ed2_human()
-event_dat <- ed2_events()
-
-
-#test country codes
-country_codes <- c("BD", "TH", "CN")
-#test texa types
-taxa_types <- c('rodents', "bats", 'nhp', 'swine', 'poultry')
+# library(plyr)
+# library(tidyverse)
+# library(replyr) #for coalesce to fill in missing crossprods
+#
+# #download all human tables
+# dat <- ed2_human()
+# event_dat <- ed2_events()
+#
+#
+# #test country codes
+# country_codes <- c("BD", "TH", "CN")
+# #test texa types
+# taxa_types <- c('rodents', "bats", 'nhp', 'swine', 'poultry')
 
 ###################################################################
 
@@ -214,8 +214,8 @@ reshape_contaxa_data <- function(dat, taxa){
   return(res)
   }
 
-#test contaxa function
-BD_contaxa_dat <- reshape_contaxa_data(dat = BD_dat, taxa = taxa_types)
+# #test contaxa function
+# BD_contaxa_dat <- reshape_contaxa_data(dat = BD_dat, taxa = taxa_types)
 
 ############################################################################
 ######## test demographic selection pipeline ###############################
@@ -288,9 +288,9 @@ select_demo_dat <- function(dat){
 }
 
 #test select demo dat function
-BD_demo <- dat %>%
-  select_country_dat(country_codes = 'BD') %>%
-  select_demo_dat()
+# BD_demo <- dat %>%
+#   select_country_dat(country_codes = 'BD') %>%
+#   select_demo_dat()
 #######################################################
 ############## join contaxa and demo data ################
 
@@ -308,9 +308,9 @@ join_contx_and_demo <- function(contx_dat, demo_dat){
        type = 'left') #left join since contx is longer
 }
 
-#test function
-BD_join_dat <- join_contx_and_demo(BD_contaxa_dat,
-                                    BD_demo)
+# #test function
+# BD_join_dat <- join_contx_and_demo(BD_contaxa_dat,
+#                                     BD_demo)
 
 ##############################################################
 #test age quintiles (start with quintiles)
@@ -414,19 +414,19 @@ calc_percent_repondents_by_var <- function(contaxa_dat,
 }
 ####################################################################################
 ######################## test caluclate percent general function ###################
-BD_concurrent_grouped <-
-  BD_join_dat %>%
-  calc_percent_repondents_by_var(demo_dat = BD_demo,
-                                 var_name = 'concurrent_sampling_site')
-
-BD_occupation_grouped <-
-  BD_join_dat %>%
-  calc_percent_repondents_by_var(demo_dat = BD_demo,
-                                 var_name = 'occupation')
-BD_age_grouped <-
-  BD_join_dat %>%
-  calc_percent_repondents_by_var(demo_dat = BD_demo,
-                                 var_name = 'age_quint_range')
+# BD_concurrent_grouped <-
+#   BD_join_dat %>%
+#   calc_percent_repondents_by_var(demo_dat = BD_demo,
+#                                  var_name = 'concurrent_sampling_site')
+#
+# BD_occupation_grouped <-
+#   BD_join_dat %>%
+#   calc_percent_repondents_by_var(demo_dat = BD_demo,
+#                                  var_name = 'occupation')
+# BD_age_grouped <-
+#   BD_join_dat %>%
+#   calc_percent_repondents_by_var(demo_dat = BD_demo,
+#                                  var_name = 'age_quint_range')
 #####################################################################################
 ########################### general expand contaxa by variable function #############
 #'@name expand_contaxa_crossprod_by_var
@@ -453,18 +453,18 @@ expand_contaxa_by_var <- function(dat, var_name){
   }
 ########################################################################################
 ########## test general expand contaxa function ########################################
-
-BD_occupation_group_full <-
-  BD_occupation_grouped %>%
-  expand_contaxa_by_var(var_name = 'occupation')
-
-BD_concurrent_group_full <-
-  BD_concurrent_grouped %>%
-  expand_contaxa_by_var(var_name ='concurrent_sampling_site')
-
-BD_age_group_full <-
-  BD_age_grouped %>%
-  expand_contaxa_crossprod_by_var(var_name = 'age_quint_range')
+#
+# BD_occupation_group_full <-
+#   BD_occupation_grouped %>%
+#   expand_contaxa_by_var(var_name = 'occupation')
+#
+# BD_concurrent_group_full <-
+#   BD_concurrent_grouped %>%
+#   expand_contaxa_by_var(var_name ='concurrent_sampling_site')
+#
+# BD_age_group_full <-
+#   BD_age_grouped %>%
+#   expand_contaxa_crossprod_by_var(var_name = 'age_quint_range')
 ########################################################################################
 ################################### annotate group N function ##########################
 
@@ -516,19 +516,19 @@ annotate_factor_with_n <- function(contaxa_dat, var_name, demo_dat){
   }
 ########################################################################################
 ################# test annotate factor functions #######################################
-
-BD_occupation_annotated <-
-  BD_occupation_group_full %>%
-  annotate_factor_with_n(var_name = 'occupation',
-                         demo_dat = BD_demo)
-
-BD_concurrent_annotated <-
-  BD_concurrent_group_full %>%
-  annotate_factor_with_n(var_name = 'concurrent_sampling_site',
-                         demo_dat = BD_demo)
-
-BD_age_annotated <-
-  BD_age_group_full %>%
-  annotate_factor_with_n(var_name = 'age_quint_range',
-                         demo_dat = BD_demo)
+#
+# BD_occupation_annotated <-
+#   BD_occupation_group_full %>%
+#   annotate_factor_with_n(var_name = 'occupation',
+#                          demo_dat = BD_demo)
+#
+# BD_concurrent_annotated <-
+#   BD_concurrent_group_full %>%
+#   annotate_factor_with_n(var_name = 'concurrent_sampling_site',
+#                          demo_dat = BD_demo)
+#
+# BD_age_annotated <-
+#   BD_age_group_full %>%
+#   annotate_factor_with_n(var_name = 'age_quint_range',
+#                          demo_dat = BD_demo)
 ########################################################################################

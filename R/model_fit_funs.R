@@ -1,18 +1,18 @@
 ########################################################################################
-library(glmnet)
-library(plyr) #for join_all
-library(tidyverse)
-library(foreach)
-library(Matrix)
-library(selectiveInference)
+# library(glmnet)
+# library(plyr) #for join_all
+# library(tidyverse)
+# library(foreach)
+# library(Matrix)
+# library(selectiveInference)
 ######################### import example data ##########################################
-#download human questionnaire data for all countries
-dat <- ed2_human()
-
-#subset BD dat for analysis
-BD_dat <-
-  dat %>%
-  select_country_dat(country_codes = 'BD') #from data_manip_funs.R
+# #download human questionnaire data for all countries
+# dat <- ed2_human()
+#
+# #subset BD dat for analysis
+# BD_dat <-
+#   dat %>%
+#   select_country_dat(country_codes = 'BD') #from data_manip_funs.R
 
 
 #######################################################################################
@@ -54,9 +54,9 @@ get_clean_exposures <- function(dat, taxa_names){
 ################################# test clean exposures ########################
 
 
-BD_contacts_dat <-
-  BD_dat %>%
-  get_clean_exposures(taxa_names = c('bats', 'nhp', 'swine', 'poultry', 'rodents'))
+# BD_contacts_dat <-
+#   BD_dat %>%
+#   get_clean_exposures(taxa_names = c('bats', 'nhp', 'swine', 'poultry', 'rodents'))
 
 
 ###############################################################################
@@ -206,7 +206,7 @@ get_clean_illness_covariates <- function(dat){
 ####################################################################################
 ######################## example covariate data ####################################
 
-BD_covars <- BD_dat %>% get_clean_illness_covariates()
+# BD_covars <- BD_dat %>% get_clean_illness_covariates()
 
 ####################################################################################
 ######################## get symptoms response data function #######################
@@ -241,18 +241,18 @@ get_self_reports <- function(dat, of_interest = T){
 }
 
 ##########################################################################################
-####################### example self-report dat ##########################################
-
-#test function
-BD_self_reports <- BD_dat %>% get_self_reports()
-
-##########################################################################################
-########################### example analysis data #########################################
-
-#TODO: wrap the contaxa dataframe generation into a function
-BD_analysis_dat <- join_all(list(BD_covars, BD_self_reports, BD_contacts_dat),
-                            by = 'participant_id',
-                            type='full')
+# ####################### example self-report dat ##########################################
+#
+# #test function
+# BD_self_reports <- BD_dat %>% get_self_reports()
+#
+# ##########################################################################################
+# ########################### example analysis data #########################################
+#
+# #TODO: wrap the contaxa dataframe generation into a function
+# BD_analysis_dat <- join_all(list(BD_covars, BD_self_reports, BD_contacts_dat),
+#                             by = 'participant_id',
+#                             type='full')
 
 #############################################################################################
 ################################## crosstab function ##########################################
@@ -336,9 +336,9 @@ run_contaxa_crosstab <- function(analysis_dat, condition_var, alpha = 0.05){
   return(res_frame)
   }
 
-#test function
-BD_contaxa_crosstab <- run_contaxa_crosstab(analysis_dat = BD_analysis_dat,
-                                              condition_var = 'gender')
+# #test function
+# BD_contaxa_crosstab <- run_contaxa_crosstab(analysis_dat = BD_analysis_dat,
+#                                               condition_var = 'gender')
 
 #TODO: write wrapper run_all_contaxa_crosstab for all covariates of interest
 #TODO: output should be a concat table (store in list) of all results
@@ -424,9 +424,9 @@ get_illness_analysis_dat <- function(dat,
 }
 
 #test create analysis frame
-ili_model_dat <-
-  BD_dat %>%
-  get_illness_analysis_dat(outcome_var = 'ili')
+# ili_model_dat <-
+#   BD_dat %>%
+#   get_illness_analysis_dat(outcome_var = 'ili')
 ##############################################################################################
 ############################## remove_colinear_columns #######################################
 
@@ -471,67 +471,67 @@ remove_colinear_columns <- function(dat){
   return(list(removed_vars = removed_vars, model_data_matrix = final_matrix))
 }
 
-#test function
-res <- ili_model_dat %>% remove_colinear_columns()
-
-#output logical test that algo works
-cat('Rank matches number of columns?',
-    ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix))
-
-#create matrix of
-ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
-############################# LASSO Regularized Logistic Regression ##########################
-
-#illness_model_dat_split <- train_test_split(illness_model_dat)
-#get optimal lambda
-lambda.fit <- cv.glmnet(x = ili_x_matrix ,
-                       y =  ili_model_dat[,1] ,
-                       nfolds = , #5-fold CV
-                       family = 'binomial',
-                       #lambda = sapply(1:20, function(x) 2^(-x)),
-                       alpha = 1) #LASSO regularize
-plot(lambda.fit)
-cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
-lam <- lambda.fit$lambda.min
-n <- length(ili_model_dat[,1])
+# #test function
+# res <- ili_model_dat %>% remove_colinear_columns()
+#
+# #output logical test that algo works
+# cat('Rank matches number of columns?',
+#     ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix))
+#
+# #create matrix of
+# ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
+# ############################# LASSO Regularized Logistic Regression ##########################
+#
+# #illness_model_dat_split <- train_test_split(illness_model_dat)
+# #get optimal lambda
+# lambda.fit <- cv.glmnet(x = ili_x_matrix ,
+#                        y =  ili_model_dat[,1] ,
+#                        nfolds = , #5-fold CV
+#                        family = 'binomial',
+#                        #lambda = sapply(1:20, function(x) 2^(-x)),
+#                        alpha = 1) #LASSO regularize
+# plot(lambda.fit)
+# cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
+# lam <- lambda.fit$lambda.min
+# n <- length(ili_model_dat[,1])
 #fit glmnet with optimal lambda on training data
-lasso.fit <- glmnet(x = ili_x_matrix,
-                    y = ili_model_dat[,1],
-                    family = 'binomial',
-                    lambda = lam , #use CV'd lambda.min
-                    alpha = 1,  #LASSO
-                    standardize = T,
-                    thresh = 1e-25)
-#summarize model
-lasso.fit
-#get non-zero coefficients
-exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
-#get class predictions
-lasso.pred <- predict(lasso.fit,
-                      newx = ili_x_matrix,
-                      type = 'class')
-lasso.pred
-
-#get misclassification rate
-lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
-lasso.conf.matrix
-1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
-
-
-#glmnet multiplies the first term by a factor of 1/n
-betas = coef(lasso.fit,
-             s = lam/n,
-             exact = T,
-             x = ili_x_matrix ,
-             y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
-
-#perform inference for glmnet (LASSO) model
-lasso.inference <-
-  fixedLassoInf(x = ili_x_matrix,
-                y = as.logical( ili_model_dat[,1] )*1 ,
-                beta = betas,
-                lambda = lam
-  )
+# lasso.fit <- glmnet(x = ili_x_matrix,
+#                     y = ili_model_dat[,1],
+#                     family = 'binomial',
+#                     lambda = lam , #use CV'd lambda.min
+#                     alpha = 1,  #LASSO
+#                     standardize = T,
+#                     thresh = 1e-25)
+# #summarize model
+# lasso.fit
+# #get non-zero coefficients
+# exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
+# #get class predictions
+# lasso.pred <- predict(lasso.fit,
+#                       newx = ili_x_matrix,
+#                       type = 'class')
+# lasso.pred
+#
+# #get misclassification rate
+# lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
+# lasso.conf.matrix
+# 1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
+#
+#
+# #glmnet multiplies the first term by a factor of 1/n
+# betas = coef(lasso.fit,
+#              s = lam/n,
+#              exact = T,
+#              x = ili_x_matrix ,
+#              y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
+#
+# #perform inference for glmnet (LASSO) model
+# lasso.inference <-
+#   fixedLassoInf(x = ili_x_matrix,
+#                 y = as.logical( ili_model_dat[,1] )*1 ,
+#                 beta = betas,
+#                 lambda = lam
+#   )
 
 
 ###############################################################################################
