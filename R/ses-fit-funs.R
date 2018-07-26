@@ -1,6 +1,6 @@
 library(lavaan)
 library(semPlot)
-
+####################################################################################################
 alldat_covars <-
   dat %>%
   get_clean_illness_covariates()
@@ -12,41 +12,6 @@ extra_dat <-
   ed2_expand_wide(food_storage_containers)
 
 wash_predict_dat <- join(extra_dat, alldat_covars, by='participant_id')
-ses.model <-
-'
-ses =~
-highest_education_none
-highest_education_mother_none  +
-dwelling_permanent_structure +
-animals_in_food_life +
-animals_in_dwelling_life
-
-
-#variances
-
-highest_education_mother_none ~~ 0.249 * highest_education_mother_none
-rooms_in_dwelling ~~ 1 * rooms_in_dwelling
-people_in_dwelling ~~ 1 * people_in_dwelling
-'
-
-#fit model
-ses.fit <- cfa(model = ses.model, data = alldat_covars)
-
-#get summary
-summary(ses.fit, standardized = T, fit.measures = T, rsquare = T)
-
-#check model fit
-AIC(ses.fit)
-
-#plot model
-semPaths(ses.fit, whatLabels = 'std',
-         edge.label.cex = 0.8,
-         rotation=2,
-         what = 'std',
-         edge.color = 'purple',
-         nCharNodes = 15,
-         sizeMan = 12,
-         sizeMan2 = 12)
 
 #####################################################################################################
 wash.model <-
@@ -94,7 +59,7 @@ wash_dat <-
   mutate(wash_index = lavPredict(wash.fit)) %>%
   select(participant_id, wash_index)
 
-#
+#get demographic data for viz
 all_demo_dat <-
   dat %>%
   get_country_codes() %>%
@@ -112,16 +77,13 @@ all_demo_dat <-
 
 
 
-
+#join wash data to demographic data
 wash_viz_dat <-
   join(all_demo_dat, wash_dat, by='participant_id')
 
-ggplot(dat = wash_viz_dat, aes(x = country)) + geom_boxplot(aes(y = wash_index))
-
+#plot things
 ggplot(dat = wash_viz_dat) +
-  geom_boxplot(aes(y = wash_index)) +
-  #geom_violin(aes(y = wash_index, x = country)) +
-  facet_wrap(~country, strip.position = 'bottom') +
+  geom_boxplot(aes(y = wash_index, x = country)) +
   theme_fivethirtyeight() +
   scale_y_continuous(limits = c(-0.4, 0.6)) +
   theme(axis.text.x.bottom = element_blank()) +
