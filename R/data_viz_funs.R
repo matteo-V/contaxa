@@ -5,14 +5,6 @@ library(viridis)
 library(RColorBrewer)
 library(colorRamps)
 
-#load data for testing viz functions
-BD_age_dat <- readRDS(file='data/BD_contaxa_percent_by_age.rds')
-BD_gender_dat <- readRDS(file='data/BD_contaxa_percent_by_gender.rds')
-BD_live_dat <- readRDS(file='data/BD_contaxa_percent_by_live.rds')
-BD_education_dat <-  readRDS(file = 'data/BD_contaxa_percent_by_education.rds')
-BD_maternal_education_dat <- readRDS(file = 'data/BD_contaxa_percent_by_education_mother.rds')
-
-
 #'@name get_education_factor_order
 #'@depends annotate_factor_with_n
 #'@author matteo-V
