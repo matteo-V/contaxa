@@ -1,0 +1,16 @@
+Package: contaxa
+Title: Analysis of PREDICT behavioral data
+Version: 0.0.0.9000
+Authors@R: person("Matteo", "Vaiente", , "Matteo.a.v@gmail.com", c("aut", "cre"))
+Description: This package contains functions for performing analysis of human
+  behavioral data from PREDICT. Tools are included for visualization of survey
+  data at the site and country level, univariate analysis, and penalized multiple
+  regression.  Also included is a method for constructing WASH index variables
+  from relevant survey data. Functions assume access to data from the EIDITH
+  database.
+License: MIT + file LICENSE
+URL: https://github.com/ecohealthalliance/contaxa
+BugReports: https://github.com/ecohealthalliance/contaxa/issues
+ByteCompile: true
+Encoding: UTF-8
+LazyData: true
