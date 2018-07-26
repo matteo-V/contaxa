@@ -1,6 +1,5 @@
 data/
 figs/
-inst/
 .DS_Store
 R/.DS_Store
 .Rhistory
