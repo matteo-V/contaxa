@@ -8,6 +8,32 @@ Description: This package contains functions for performing analysis of human
   regression.  Also included is a method for constructing WASH index variables
   from relevant survey data. Functions assume access to data from the EIDITH
   database.
+Imports:
+  ggplot2,
+  dplyr,
+  rlang,
+  tidyr,
+  stringr,
+  replyr,
+  eidith,
+  stats,
+  Matrix
+Suggests:
+  randomForest,
+  lavaan,
+  semPlot,
+  ggthemes,
+  viridis,
+  ggvis,
+  gbm,
+  foreach,
+  selectiveInference,
+  RColorBrewer,
+  plotly,
+  stargazer,
+  colorRamps
+Remotes:
+  ecohealthalliance/eidith
 License: MIT + file LICENSE
 URL: https://github.com/ecohealthalliance/contaxa
 BugReports: https://github.com/ecohealthalliance/contaxa/issues
