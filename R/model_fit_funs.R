@@ -24,7 +24,7 @@
 #' @author matteo-V
 #' @export
 #' @importFrom dplyr %>% select rename
-#' @importFrom eidith e2_expand_wide
+#' @importFrom eidith ed2_expand_wide
 #' @importFrom rlang !! sym :=
 #' @importFrom plyr join_all
 get_clean_exposures <- function(dat, taxa_names){

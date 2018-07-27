@@ -76,7 +76,8 @@ get_taxa_colnames <- function(human_dat, taxa_types){
 #' @return human_dat frame with concurrent sites added
 #' @author matteo-V
 #' @importFrom eidith ed2_events
-#' @importFrom dplyr select join %>%
+#' @importFrom dplyr select %>%
+#' @importFrom plyr join
 #' @export
 get_concurrent_sites <- function(human_dat){
 
@@ -309,7 +310,7 @@ select_demo_dat <- function(dat){
 #' @param contx_dat from reshape_contaxa_data function
 #' @param demo_dat from select_demo_dat function
 #' @return joined contaxa  and demographic variables frames
-#' @importFrom dplyr join
+#' @importFrom plyr join
 #' @export
 join_contx_and_demo <- function(contx_dat, demo_dat){
   #join dat on unique ID

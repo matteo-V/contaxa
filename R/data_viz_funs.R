@@ -168,7 +168,7 @@ plot_strat_wrap_heatmap <- function(contaxa_dat){
 #' @param human_dat (optional) used for ordering plots by age_quinte_range
 #' @return ggplot2 heatmap object
 #' @import ggplot2
-#' @importFrom stingr str_detect
+#' @importFrom stringr str_detect
 #' @importFrom dplyr %>%
 plot_contaxa_heatmap <- function(dat, strat, human_dat = NULL, wrap_contact = T){
 
