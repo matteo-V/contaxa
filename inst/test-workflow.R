@@ -150,17 +150,44 @@ n <- length(ili_model_dat[,1])
 
 #create matrix of
 ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
-############################# LASSO Regularized Logistic Regression ##########################
 
-#illness_model_dat_split <- train_test_split(illness_model_dat)
-#get optimal lambda
-lambda.fit <- cv.glmnet(x = ili_x_matrix ,
-                        y =  ili_model_dat[,1] ,
-                        nfolds = , #5-fold CV
-                        family = 'binomial',
-                        #lambda = sapply(1:20, function(x) 2^(-x)),
-                        alpha = 1) #LASSO regularize
-plot(lambda.fit)
-cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
-lam <- lambda.fit$lambda.min
-n <- length(ili_model_dat[,1])
+#fit glmnet with optimal lambda on training data
+lasso.fit <- glmnet(x = ili_x_matrix,
+                    y = ili_model_dat[,1],
+                    family = 'binomial',
+                    lambda = lam , #use CV'd lambda.min
+                    alpha = 1,  #LASSO
+                    standardize = T,
+                    thresh = 1e-25)
+#summarize model
+# lasso.fit
+#get non-zero coefficients
+exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
+#get class predictions
+lasso.pred <- predict(lasso.fit,
+                      newx = ili_x_matrix,
+                      type = 'class')
+head(lasso.pred)
+
+#get misclassification rate
+lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
+lasso.conf.matrix
+1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
+
+
+#glmnet multiplies the first term by a factor of 1/n
+betas = coef(lasso.fit,
+             s = lam/n,
+             exact = T,
+             x = ili_x_matrix ,
+             y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
+
+#perform inference for glmnet (LASSO) model
+lasso.inference <-
+  fixedLassoInf(x = ili_x_matrix,
+                y = as.logical( ili_model_dat[,1] )*1 ,
+                beta = betas,
+                lambda = lam
+  )
+
+
