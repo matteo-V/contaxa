@@ -177,7 +177,7 @@ exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
 lasso.pred <- predict(lasso.fit,
                       newx = res$model_data_matrix[,-1],
                       type = 'class')
-head(lasso.pred)
+
 
 #get misclassification rate
 lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
@@ -200,5 +200,50 @@ lasso.inference <-
                 lambda = lam
   )
 
-lasso.inference
+#variables names for output
+var_names <- names(lasso.inference$vars)
+
+#mean effect sizes
+effects <- lasso.inference$coef0[,1]
+
+#lower CI bound
+lower_ci <- lasso.inference$ci[,1]
+upper_ci <- lasso.inference$ci[,2]
+
+#pvalues
+pvalues <- lasso.inference$pv
+
+#create table
+lasso_inference_table <- data_frame(var_names = var_names,
+                                    effect_size=effects,
+                                    lower=lower_ci,
+                                    upper=upper_ci,
+                                    pvalues=pvalues)
+
+#annotate significant values
+lasso_inference_table$significant <- (lasso_inference_table$pvalues < 0.05)
+
+#convert to odds ratios
+lasso_inference_table <-
+  lasso_inference_table %>%
+  mutate_at(.vars = vars(effect_size, lower, upper), .funs = funs(exp)) %>%
+  mutate(var_names = str_replace_all(var_names, '_', ' '))
+
+#subset significant variables
+sig_lasso_inference <- subset(lasso_inference_table, significant == T)
+sig_lasso_inference <- sig_lasso_inference[order(sig_lasso_inference$effect_size, decreasing = F),]
+var_order <- sig_lasso_inference$var_names
+
+#plot things
+ggplot(data = lasso_inference_table, aes(y = var_names, x = effect_size)) +
+  geom_point(aes(color = var_names), cex = 4) +
+  geom_errorbarh(aes(xmin = lower, xmax=upper, color = var_names), lwd=0.8) +
+  geom_vline(aes(xintercept = 1), lty=2, color = 'black', alpha = 0.8) +
+  ggtitle('ILI in BD: Variable Odds Ratios') +
+  scale_color_discrete(guide=F) +
+  theme_bw() +
+  xlab('Odds Ratio') +
+  theme(plot.title = element_text(size=16, hjust=0.5),
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(size=14))
 
