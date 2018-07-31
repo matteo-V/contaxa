@@ -13,7 +13,7 @@
 #' @return vector of factor levels ordered by decreasing education
 #' @importFrom dplyr %>% select
 #' @importFrom stringr str_extract
-#' @export
+#' @noRd
 get_education_factor_order <- function(dat, strat_var){
 
   strat_levels <-
@@ -43,6 +43,7 @@ get_education_factor_order <- function(dat, strat_var){
 #' @author matteo-V
 #' @importFrom dplyr %>% select filter
 #' @importFrom stringr str_extract
+#' @noRd
 get_age_ntile_factor_order <- function(dat, human_dat){
 
   #build demo dat
@@ -95,7 +96,7 @@ get_age_ntile_factor_order <- function(dat, human_dat){
 #' @return unstyled heatmap to be faceted by plot_contaxa_heatmap
 #' @author matteo-V
 #' @import ggplot2
-#' @export
+#' @noRd
 plot_contact_wrap_heatmap <- function(contaxa_dat, strat_var, factor_order=NULL){
   ggplot(data = contaxa_dat,
          color = 'gray',
@@ -131,7 +132,7 @@ plot_contact_wrap_heatmap <- function(contaxa_dat, strat_var, factor_order=NULL)
 #' @return heatmap to be faceted by plot_contaxa_heatmap
 #' @author matteo-V
 #' @import ggplot2
-#' @export
+#' @noRd
 plot_strat_wrap_heatmap <- function(contaxa_dat){
   ggplot(data = contaxa_dat,
          color = 'gray',
@@ -170,6 +171,7 @@ plot_strat_wrap_heatmap <- function(contaxa_dat){
 #' @import ggplot2
 #' @importFrom stringr str_detect
 #' @importFrom dplyr %>%
+#' @export
 plot_contaxa_heatmap <- function(dat, strat, human_dat = NULL, wrap_contact = T){
 
   if(wrap_contact){
