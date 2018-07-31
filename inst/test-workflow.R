@@ -55,7 +55,7 @@ BD_concurrent_group_full <-
 
 BD_age_group_full <-
   BD_age_grouped %>%
-  expand_contaxa_crossprod_by_var(var_name = 'age_quint_range')
+  expand_contaxa_by_var(var_name = 'age_quint_range')
 
 
 BD_occupation_annotated <-
@@ -84,7 +84,9 @@ library(viridis)
 library(RColorBrewer)
 library(colorRamps)
 
-
+BD_age_annotated %>%  plot_contaxa_heatmap(strat = 'age_quint_range',
+                                           human_dat = dat %>%
+                                             select_country_dat(country_codes = 'BD'))
 #########################################################################################
 ##################################LASSO Pipeline#########################################
 ### from model_fit_funs.R
@@ -114,7 +116,6 @@ BD_covars <- BD_dat %>% get_clean_illness_covariates()
 #get self reports widened for univariate stats
 BD_self_reports <- BD_dat %>% get_self_reports()
 
-########################### example analysis data #######################################
 
 #TODO: wrap the contaxa dataframe generation into a function
 BD_univariate_analysis_dat <- join_all(list(BD_covars, BD_self_reports, BD_contacts_dat),
@@ -139,7 +140,7 @@ cat('Rank matches number of columns?',
 
 
 #create matrix of
-ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
+ili_x_matrix <- model.matrix(outcome ~ (.)^2 + ., data = data.frame(res$model_data_matrix) )
 ############################# LASSO Regularized Logistic Regression ##########################
 
 #illness_model_dat_split <- train_test_split(illness_model_dat)
