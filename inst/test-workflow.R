@@ -1,7 +1,7 @@
 # from dana_manip_funs.R
+library(eidith)
 options(ed_sql_path = "data/PREDICT2data.sqlite")
 devtools::load_all()
-library(eidith)
 library(plyr)
 library(tidyverse)
 library(replyr) #for coalesce to fill in missing crossprods
@@ -70,6 +70,8 @@ BD_age_annotated <-
   annotate_factor_with_n(var_name = 'age_quint_range',
                          demo_dat = BD_demo)
 
+
+#################################Vizualization Pipeleine#################################
 ### From data_viz_funs.R
 
 library(tidyverse) #interactive beauty
@@ -79,8 +81,9 @@ library(viridis)
 library(RColorBrewer)
 library(colorRamps)
 
+#########################################################################################
+##################################LASSO Pipeline#########################################
 ### from model_fit_funs.R
-
 library(glmnet)
 library(plyr) #for join_all
 library(tidyverse)
@@ -95,31 +98,32 @@ dat <- ed2_human()
 BD_dat <-
   dat %>%
   select_country_dat(country_codes = 'BD') #from data_manip_funs.R
+
+#get taxa contacts widened for analysis
 BD_contacts_dat <-
   BD_dat %>%
   get_clean_exposures(taxa_names = c('bats', 'nhp', 'swine', 'poultry', 'rodents'))
 
+#get clean covariates widened for analysis
 BD_covars <- BD_dat %>% get_clean_illness_covariates()
 
-####################### example self-report dat ##########################################
-
-#test function
+#get self reports widened for univariate stats
 BD_self_reports <- BD_dat %>% get_self_reports()
 
-##########################################################################################
-########################### example analysis data #########################################
+########################### example analysis data #######################################
 
 #TODO: wrap the contaxa dataframe generation into a function
-BD_analysis_dat <- join_all(list(BD_covars, BD_self_reports, BD_contacts_dat),
+BD_univariate_analysis_dat <- join_all(list(BD_covars, BD_self_reports, BD_contacts_dat),
                             by = 'participant_id',
                             type='full')
 
-#test function
-BD_contaxa_crosstab <- run_contaxa_crosstab(analysis_dat = BD_analysis_dat,
-                                            condition_var = 'gender')
-
+#run univariate statistics for gender on all contact types
+BD_contaxa_crosstab <- run_contaxa_crosstab(analysis_dat = BD_univariate_analysis_dat,
+                                            condition_var = 'gender_male')
+#get ili analysis frame
 ili_model_dat <-
-  BD_dat %>%
+  dat %>%
+  select_country_dat(country_codes = 'BD') %>%
   get_illness_analysis_dat(outcome_var = 'ili')
 
 #test function

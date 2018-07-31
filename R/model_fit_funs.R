@@ -312,7 +312,7 @@ run_contaxa_crosstab <- function(analysis_dat, condition_var, alpha = 0.05){
     #parse contaxa name
     contx <- str_remove(contx_var, "(.*_contact_|.*_contact)") #empty string correspond to no_contact
     #calculate p_values
-    p_val <- run_crosstab(BD_analysis_dat, condition = condition_var, outcome = contx_var)
+    p_val <- run_crosstab(analysis_dat, condition = condition_var, outcome = contx_var)
     #create new dataframe row
     res <-  data_frame(var = condition_var, taxa_type = taxa, contx_type = contx, p_value = p_val)
     #append to results
