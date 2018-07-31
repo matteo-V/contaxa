@@ -18,7 +18,8 @@ Imports:
   eidith,
   stats,
   Matrix,
-  plyr
+  plyr,
+  foreach
 Suggests:
   randomForest,
   lavaan,
