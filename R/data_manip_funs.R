@@ -266,7 +266,7 @@ get_age_ntiles <- function(dat, ntiles = 5){
 #'@function to select demographic vars from data
 #'@param dat EIDITH human dataframe from which to select variables
 #'@depend get_age_quintiles to calculate age quintiles
-#'@depens ed2_human
+#'@depends ed2_human
 #'@return dataframe of demographic data and participantID (key)
 #'@author matteo-V
 
