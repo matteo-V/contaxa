@@ -172,6 +172,7 @@ plot_strat_wrap_heatmap <- function(contaxa_dat){
 #' @importFrom stringr str_detect
 #' @importFrom dplyr %>%
 #' @importFrom viridis scale_fill_viridis
+#' @importFrom ggthemes theme_fivethirtyeight
 #' @export
 plot_contaxa_heatmap <- function(dat, strat, human_dat = NULL, wrap_contact = T){
 
