@@ -1,3 +1,4 @@
+############################### Visualization Pipeline Test ############################
 # from dana_manip_funs.R
 library(eidith)
 options(ed_sql_path = "data/PREDICT2data.sqlite")
@@ -8,17 +9,19 @@ library(replyr) #for coalesce to fill in missing crossprods
 
 #download all human tables
 dat <- ed2_human()
-event_dat <- ed2_events()
-
 
 #test country codes
 country_codes <- c("BD", "TH", "CN")
 #test texa types
 taxa_types <- c('rodents', "bats", 'nhp', 'swine', 'poultry')
 
-#test contaxa function
-BD_contaxa_dat <- reshape_contaxa_data(dat = BD_dat, taxa = taxa_types)
+#BD contaxa data
+BD_contaxa_dat <-
+  dat %>%
+  select_country_dat(country_codes = 'BD') %>%
+  reshape_contaxa_data(taxa = taxa_types)
 
+#BD demographic data
 BD_demo <- dat %>%
   select_country_dat(country_codes = 'BD') %>%
   select_demo_dat()
@@ -71,7 +74,7 @@ BD_age_annotated <-
                          demo_dat = BD_demo)
 
 
-#################################Vizualization Pipeleine#################################
+################################ Vizualization Pipeleine ################################
 ### From data_viz_funs.R
 
 library(tidyverse) #interactive beauty
@@ -80,6 +83,7 @@ library(ggthemes) #pretty fivethirtyeight theme
 library(viridis)
 library(RColorBrewer)
 library(colorRamps)
+
 
 #########################################################################################
 ##################################LASSO Pipeline#########################################
