@@ -1,27 +1,32 @@
 ########################################################################################
-library(glmnet)
-library(plyr) #for join_all
-library(tidyverse)
-library(foreach)
-library(Matrix)
-library(selectiveInference)
+# library(glmnet)
+# library(plyr) #for join_all
+# library(tidyverse)
+# library(foreach)
+# library(Matrix)
+# library(selectiveInference)
 ######################### import example data ##########################################
-#download human questionnaire data for all countries
-dat <- ed2_human()
-
-#subset BD dat for analysis
-BD_dat <-
-  dat %>%
-  select_country_dat( country_codes = 'BD' ) #from data_manip_funs.R
+# #download human questionnaire data for all countries
+# dat <- ed2_human()
+#
+# #subset BD dat for analysis
+# BD_dat <-
+#   dat %>%
+#   select_country_dat(country_codes = 'BD') #from data_manip_funs.R
 
 
 #######################################################################################
 ####################### get exposure response data function ###########################
-#'@function create cleaned, binary response frame for contx_type
-#'@param dat raw data frame, prefereably passed through select_country_dat
-#'@param taxa_names character vector of taxa names
-#'@return wide data frame with binary exposures of interest
-#'@author matteo-V
+#' Create cleaned, binary response frame for contx_type
+#' @param dat raw data frame, prefereably passed through select_country_dat
+#' @param taxa_names character vector of taxa names
+#' @return wide data frame with binary exposures of interest
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select rename
+#' @importFrom eidith ed2_expand_wide
+#' @importFrom rlang !! sym :=
+#' @importFrom plyr join_all
 get_clean_exposures <- function(dat, taxa_names){
 
   #create final list for plyr join_all
@@ -54,18 +59,20 @@ get_clean_exposures <- function(dat, taxa_names){
 ################################# test clean exposures ########################
 
 
-BD_contacts_dat <-
-  BD_dat %>%
-  get_clean_exposures(taxa_names = c('bats', 'nhp', 'swine', 'poultry', 'rodents'))
+# BD_contacts_dat <-
+#   BD_dat %>%
+#   get_clean_exposures(taxa_names = c('bats', 'nhp', 'swine', 'poultry', 'rodents'))
 
 
 ###############################################################################
 #################### get covariate data function ##############################
-#'@name get_clean_illness_covars
-#'@function: create and widen covariate data for self reported illness modeling
-#'@param dat a raw human table from EIDITH which to clean
-#'@return wide data set with data types cleaned for regression analysis
-#'@author matteo-V
+#' Create and widen covariate data for self reported illness modeling
+#' @param dat a raw human table from EIDITH which to clean
+#' @return wide data set with data types cleaned for regression analysis
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select matches mutate mutate_at mutate_if add_count
+#' @importFrom eidith ed2_expand_wide
 get_clean_illness_covariates <- function(dat){
   #select and widen covariate data
   dat %>%
@@ -206,16 +213,19 @@ get_clean_illness_covariates <- function(dat){
 ####################################################################################
 ######################## example covariate data ####################################
 
-BD_covars <- BD_dat %>% get_clean_illness_covariates()
+# BD_covars <- BD_dat %>% get_clean_illness_covariates()
 
 ####################################################################################
 ######################## get symptoms response data function #######################
 
-#'@function obtain and flatten self reported symptom outcome data
-#'@param dat data frame for which to obtain self-reported outcomes
-#'@param of_interest logical indicating to only select outcomes of interest as per analysis plan
-#'@return data frame (tibble) with self reported illness widened to dichotomous variables
-#'@author matteo-V
+#' Obtain and flatten self reported symptom outcome data
+#' @param dat data frame for which to obtain self-reported outcomes
+#' @param of_interest logical indicating to only select outcomes of interest as per analysis plan
+#' @return data frame (tibble) with self reported illness widened to dichotomous variables
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select
+#' @importFrom eidith ed2_expand_wide
 get_self_reports <- function(dat, of_interest = T){
   if(!of_interest){ #if not of interest outcomes
   dat %>%
@@ -241,28 +251,28 @@ get_self_reports <- function(dat, of_interest = T){
 }
 
 ##########################################################################################
-####################### example self-report dat ##########################################
-
-#test function
-BD_self_reports <- BD_dat %>% get_self_reports()
-
-##########################################################################################
-########################### example analysis data #########################################
-
-#TODO: wrap the contaxa dataframe generation into a function
-BD_analysis_dat <- join_all(list(BD_covars, BD_self_reports, BD_contacts_dat),
-                            by = 'participant_id',
-                            type='full')
+# ####################### example self-report dat ##########################################
+#
+# #test function
+# BD_self_reports <- BD_dat %>% get_self_reports()
+#
+# ##########################################################################################
+# ########################### example analysis data #########################################
+#
+# #TODO: wrap the contaxa dataframe generation into a function
+# BD_analysis_dat <- join_all(list(BD_covars, BD_self_reports, BD_contacts_dat),
+#                             by = 'participant_id',
+#                             type='full')
 
 #############################################################################################
 ################################## crosstab function ##########################################
 
-#'@function: crosstab, run fisher test (robust to small counts) and output p-value
-#'@name run_crosstab
-#'@param condition for which to test independence
-#'@param outcome the outcome variable of interest
-#'@return p value of fisher test
-#'@author matteo-V
+#' Crosstab, run fisher test (robust to small counts) and output p-value
+#' @param condition for which to test independence
+#' @param outcome the outcome variable of interest
+#' @return p value of fisher test
+#' @author matteo-V
+#' @importFrom stats fisher.test
 run_crosstab <- function(dat, condition, outcome){
   #fisher test is robust to small counts
   fisher.test( table(dat[,condition], dat[,outcome]) )$p.val
@@ -275,13 +285,15 @@ run_crosstab <- function(dat, condition, outcome){
 
 ################################################################################################
 ###################################### run contaxa crosstab function ###########################
-#'@function run crosstab for exposures (taxa contacts)
-#'@depends run_crosstab
-#'@param analysis_dat cleaned covariate data
-#'@param condition_var variable on which to condition (test) for the exposures
-#'@param alpha the alpha value for which to assess significance
-#'@return data frame of results for condition, taxa, contact type, p-value and significance (bonferroni corrected)
-#'@author matteo-V
+#' Run crosstab for exposures (taxa contacts)
+#' @param analysis_dat cleaned covariate data
+#' @param condition_var variable on which to condition (test) for the exposures
+#' @param alpha the alpha value for which to assess significance
+#' @return data frame of results for condition, taxa, contact type, p-value and significance (bonferroni corrected)
+#' @author matteo-V
+#' @export
+#' @importFrom dplyr %>% select matches data_frame mutate
+#' @importFrom stringr str_remove_all str_remove
 run_contaxa_crosstab <- function(analysis_dat, condition_var, alpha = 0.05){
 
   #get unique contact types from data set
@@ -336,9 +348,9 @@ run_contaxa_crosstab <- function(analysis_dat, condition_var, alpha = 0.05){
   return(res_frame)
   }
 
-#test function
-BD_contaxa_crosstab <- run_contaxa_crosstab(analysis_dat = BD_analysis_dat,
-                                              condition_var = 'gender')
+# #test function
+# BD_contaxa_crosstab <- run_contaxa_crosstab(analysis_dat = BD_analysis_dat,
+#                                               condition_var = 'gender')
 
 #TODO: write wrapper run_all_contaxa_crosstab for all covariates of interest
 #TODO: output should be a concat table (store in list) of all results
@@ -351,10 +363,11 @@ BD_contaxa_crosstab <- run_contaxa_crosstab(analysis_dat = BD_analysis_dat,
 ###############################################################################################
 ############################# Train test val split function ###################################
 
-#'@function train_test_val
-#'@param dat dataframe to split for training
-#'@return named list of data frames
-#'@author matteo-V
+#' Train test val split function
+#' @param dat dataframe to split for training
+#' @return named list of data frames
+#' @author matteo-V
+#' @export
 train_test_split <- function(dat){
   #empty list for data frames
   res <- list()
@@ -377,14 +390,17 @@ train_test_split <- function(dat){
 #################################################################################################
 ############################# create illness analysis frame function ############################
 
-#'@function creates data frame ready for random forest
-#'@depends get_clean_exposures
-#'@depends get_self_reports
-#'@depends get_clean_illness_covariates
-#'@param dat data frame from which to create analysis data set created from get_self_reports or get_contaxa
-#'@param outcome_var outcome variable of interest keyword (sari, ili, encehpalitis or hemorrhagic)
-#'@param taxa_names vector of taxa types for which exposures willbe included
-#'@author matteo-V
+#' Create illness analysis frame
+#'
+#' Creates data frame ready for random forest
+#' @param dat data frame from which to create analysis data set created from get_self_reports or get_contaxa
+#' @param outcome_var outcome variable of interest keyword (sari, ili, encehpalitis or hemorrhagic)
+#' @param taxa_names vector of taxa types for which exposures willbe included
+#' @author matteo-V
+#' @importFrom dplyr %>% select mutate
+#' @importFrom rlang !! sym :=
+#' @importFrom plyr join_all
+#' @export
 get_illness_analysis_dat <- function(dat,
                                        outcome_var,
                                        taxa_names = c('rodents', 'nhp', 'bats', 'swine', 'poultry')){
@@ -424,16 +440,25 @@ get_illness_analysis_dat <- function(dat,
 }
 
 #test create analysis frame
+<<<<<<< HEAD
 ili_model_dat <-
   BD_dat %>%
   get_illness_analysis_dat(outcome_var = 'ili')
 #########################################################################################
 ############################## remove_colinear_columns ##################################
+=======
+# ili_model_dat <-
+#   BD_dat %>%
+#   get_illness_analysis_dat(outcome_var = 'ili')
+##############################################################################################
+############################## remove_colinear_columns #######################################
+>>>>>>> eha/package-infrastructure
 
-#'@name remove_colinear_columns
-#'@function uses matrix rank algorithm to remove linearly dependent columns from data
-#'@param dat data frame generated by get_XXX_analysis_frame
-#'@return named list of removed variable names (removed_vars) and matrix for lasso modeling (data_matrix)
+#' Use matrix rank algorithm to remove linearly dependent columns from data
+#' @param dat data frame generated by get_XXX_analysis_frame
+#' @return named list of removed variable names (removed_vars) and matrix for lasso modeling (data_matrix)
+#' @export
+#' @importFrom  Matrix rankMatrix
 remove_colinear_columns <- function(dat){
   cat('WARNING: This function requires large amonuts of compute power.')
   outcome <- dat[,1]
@@ -472,6 +497,7 @@ remove_colinear_columns <- function(dat){
   return(list(removed_vars = removed_vars, model_data_matrix = final_matrix))
 }
 
+<<<<<<< HEAD
 #test function
 res <- ili_model_dat %>% remove_colinear_columns()
 
@@ -498,44 +524,69 @@ plot(lambda.fit)
 cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
 lam <- lambda.fit$lambda.min
 n <- length(ili_model_dat[,1])
+=======
+# #test function
+# res <- ili_model_dat %>% remove_colinear_columns()
+#
+# #output logical test that algo works
+# cat('Rank matches number of columns?',
+#     ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix))
+#
+# #create matrix of
+# ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
+# ############################# LASSO Regularized Logistic Regression ##########################
+#
+# #illness_model_dat_split <- train_test_split(illness_model_dat)
+# #get optimal lambda
+# lambda.fit <- cv.glmnet(x = ili_x_matrix ,
+#                        y =  ili_model_dat[,1] ,
+#                        nfolds = , #5-fold CV
+#                        family = 'binomial',
+#                        #lambda = sapply(1:20, function(x) 2^(-x)),
+#                        alpha = 1) #LASSO regularize
+# plot(lambda.fit)
+# cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
+# lam <- lambda.fit$lambda.min
+# n <- length(ili_model_dat[,1])
+>>>>>>> eha/package-infrastructure
 #fit glmnet with optimal lambda on training data
-lasso.fit <- glmnet(x = ili_x_matrix,
-                    y = ili_model_dat[,1],
-                    family = 'binomial',
-                    lambda = lam , #use CV'd lambda.min
-                    alpha = 1,  #LASSO
-                    standardize = T,
-                    thresh = 1e-25)
-#summarize model
-lasso.fit
-#get non-zero coefficients
-exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
-#get class predictions
-lasso.pred <- predict(lasso.fit,
-                      newx = ili_x_matrix,
-                      type = 'class')
-lasso.pred
-
-#get misclassification rate
-lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
-lasso.conf.matrix
-1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
-
-
-#glmnet multiplies the first term by a factor of 1/n
-betas = coef(lasso.fit,
-             s = lam/n,
-             exact = T,
-             x = ili_x_matrix ,
-             y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
-
-#perform inference for glmnet (LASSO) model
-lasso.inference <-
-  fixedLassoInf(x = ili_x_matrix,
-                y = as.logical( ili_model_dat[,1] )*1 ,
-                beta = betas,
-                lambda = lam
-  )
+# lasso.fit <- glmnet(x = ili_x_matrix,
+#                     y = ili_model_dat[,1],
+#                     family = 'binomial',
+#                     lambda = lam , #use CV'd lambda.min
+#                     alpha = 1,  #LASSO
+#                     standardize = T,
+#                     thresh = 1e-25)
+# #summarize model
+# lasso.fit
+# #get non-zero coefficients
+# exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
+# #get class predictions
+# lasso.pred <- predict(lasso.fit,
+#                       newx = ili_x_matrix,
+#                       type = 'class')
+# lasso.pred
+#
+# #get misclassification rate
+# lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
+# lasso.conf.matrix
+# 1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
+#
+#
+# #glmnet multiplies the first term by a factor of 1/n
+# betas = coef(lasso.fit,
+#              s = lam/n,
+#              exact = T,
+#              x = ili_x_matrix ,
+#              y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
+#
+# #perform inference for glmnet (LASSO) model
+# lasso.inference <-
+#   fixedLassoInf(x = ili_x_matrix,
+#                 y = as.logical( ili_model_dat[,1] )*1 ,
+#                 beta = betas,
+#                 lambda = lam
+#   )
 
 
 ###############################################################################################

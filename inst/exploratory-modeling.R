@@ -55,10 +55,11 @@ cat('GBM AUROC:', gbm.roc.area(obs = as.logical(illness_model_dat_gbm[['test']][
 ##########################################################################################
 ########################### calculate crossEntropy function ###############################
 #TODO: refactor this to take data sets instead of vectors
-#'@function calculate cross-entropy for random forest fit
-#'@param y class-labels (factor with levels "TRUE" "FALSE") from test set
-#'@param phat vector of probabilities for "TRUE" response
-#'@return Binomial Cross-entropy
+
+#'Calculate cross-entropy for random forest fit
+#' @param y class-labels (factor with levels "TRUE" "FALSE") from test set
+#' @param phat vector of probabilities for "TRUE" response
+#' @return Binomial Cross-entropy
 crossEntropy <- function(y, phat){
   y <- as.logical( unlist(y) ) #unlist to vector and coerce to logical
   res <- base::ifelse(y, log(phat), log(1-phat))
@@ -72,11 +73,12 @@ crossEntropy <- function(y, phat){
 
 ####################################################################################
 ############################## compute misclass rate function ######################
-#'@function function to compute missclassification rate
-#'@param test_dat test data frame
-#'@param outcome_var name of outcome variable as a character
-#'@param rf_fit fitted RF model (fitted on training data)
-#'@return misclassification rate
+#' Compute missclassification rate
+#' @param test_dat test data frame
+#' @param outcome_var name of outcome variable as a character
+#' @param rf_fit fitted RF model (fitted on training data)
+#' @return misclassification rate
+#' @export
 misclassRF <- function(test_dat, outcome_var, rf_fit){
   #unlist from frame
   y <- unlist( test_dat[outcome_var] )
@@ -97,7 +99,7 @@ tree.grid <- expand.grid(mtry = c(4,5,6,7,8),
                          insamp_crossentropy = 0,
                          outsamp_misclass = 0,
                          outsamp_crossentropy = 0)
-#'@function hyperparameter optimization for RF
+# Hyperparameter optimization for RF
 for(i in 1:nrow(tree.grid)){
   #perform Rf fit
   rf.fit <- randomForest(formula = poultry_contact_handled ~ .,
