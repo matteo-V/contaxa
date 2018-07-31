@@ -145,24 +145,24 @@ ili_x_matrix <- model.matrix(outcome ~ (.)^2 + ., data = data.frame(res$model_da
 
 #illness_model_dat_split <- train_test_split(illness_model_dat)
 #get optimal lambda
-lambda.fit <- cv.glmnet(x = ili_x_matrix ,
-                        y =  ili_model_dat[,1] ,
+lambda.fit <- cv.glmnet(x = res$model_data_matrix[,-1] ,
+                        y = res$model_data_matrix[,1] ,
                         nfolds = , #5-fold CV
                         family = 'binomial',
                         #lambda = sapply(1:20, function(x) 2^(-x)),
                         alpha = 1) #LASSO regularize
 plot(lambda.fit)
 cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
+
 lam <- lambda.fit$lambda.min
 n <- length(ili_model_dat[,1])
 
-
-#create matrix of
+#create model matrix
 ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
 
 #fit glmnet with optimal lambda on training data
-lasso.fit <- glmnet(x = ili_x_matrix,
-                    y = ili_model_dat[,1],
+lasso.fit <- glmnet(x = res$model_data_matrix[,-1],
+                    y = as.logical(ili_model_dat[,1]), #fit using logical labels
                     family = 'binomial',
                     lambda = lam , #use CV'd lambda.min
                     alpha = 1,  #LASSO
@@ -172,9 +172,10 @@ lasso.fit <- glmnet(x = ili_x_matrix,
 # lasso.fit
 #get non-zero coefficients
 exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
+
 #get class predictions
 lasso.pred <- predict(lasso.fit,
-                      newx = ili_x_matrix,
+                      newx = res$model_data_matrix[,-1],
                       type = 'class')
 head(lasso.pred)
 
@@ -188,15 +189,16 @@ lasso.conf.matrix
 betas = coef(lasso.fit,
              s = lam/n,
              exact = T,
-             x = ili_x_matrix ,
+             x = res$model_data_matrix[,-1] ,
              y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
 
 #perform inference for glmnet (LASSO) model
 lasso.inference <-
-  fixedLassoInf(x = ili_x_matrix,
+  fixedLassoInf(x = res$model_data_matrix[,-1],
                 y = as.logical( ili_model_dat[,1] )*1 ,
                 beta = betas,
                 lambda = lam
   )
 
+lasso.inference
 
