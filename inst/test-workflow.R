@@ -131,11 +131,12 @@ res <- ili_model_dat %>% remove_colinear_columns()
 
 #output logical test that algo works
 cat('Rank matches number of columns?',
-    ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix))
+    ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix, method = 'qrLINPACK'))
 
 
-#create matrix of
-ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
+#create matrix of two-way interactions
+ili_x_matrix <- model.matrix(outcome ~ (.)^2 + ., data = data.frame(res$model_data_matrix) )
+ili_x_reduced <- ili_x_matrix %>% remove_colinear_columns()
 ############################# LASSO Regularized Logistic Regression ##########################
 
 #illness_model_dat_split <- train_test_split(illness_model_dat)

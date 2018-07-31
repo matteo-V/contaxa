@@ -456,7 +456,7 @@ get_illness_analysis_dat <- function(dat,
 #' @importFrom Matrix rankMatrix
 #' @importFrom foreach foreach
 remove_colinear_columns <- function(dat){
-  cat('WARNING: This function requires large amonuts of compute power.')
+  cat('WARNING: This function requires large amounts of compute power.')
   outcome <- dat[,1]
   outcome_var <- colnames(dat)[1]
   # TODO: test rank reduce algo on full data matrix (with interactions)
@@ -464,29 +464,45 @@ remove_colinear_columns <- function(dat){
   # form <- as.formula(paste0(outcome_var, ' ~ ', ' + ', '.', ' + ', '(.)^2'))
   # model_matrix <- model.matrix(form, data = dat)
   model_matrix <- data.matrix(dat[,-1])
-  mat_rank <- rankMatrix(model_matrix[,-1]) #rank of matrix without outcome variable
+  mat_rank <- rankMatrix(model_matrix, method='qrLINPACK') #rank of matrix without outcome variable
   cat('\nMatrix Rank: ', mat_rank)
   var_names <- colnames(model_matrix) #remove outcome varaible name
 
-  for(ii in 1:length(var_names)){
+  foreach(ii = seq(1:ncol(model_matrix)), .packages = 'Matrix', .export = c('model_matrix', 'mat_rank' ) ) %do% {
     tmp_matrix <- model_matrix[,-ii]
-    tmp_rank <- rankMatrix(tmp_matrix)
-    if(tmp_rank == mat_rank){ #if rank unchanged with removal
-      model_matrix <- model_matrix[,-ii]
-    }
-    else{
-      next; #skip to next iteration
-    }
-  }
-  for(jj in 1:ncol(model_matrix)){
-
-    tmp_matrix <- model_matrix[,-jj]
-    tmp_rank <- rankMatrix(tmp_matrix)
+    tmp_rank <- rankMatrix(tmp_matrix, method = 'qrLINPACK') #lowlevel call
     if(tmp_rank == mat_rank){
-      model_matrix <-  model_matrix[,-jj]
-      }
-
+      model_matrix <- tmp_matrix
+    }
   }
+  mat_rank <- rankMatrix(model_matrix, method = 'qrLINPACK')
+  foreach(ii = seq(1:ncol(model_matrix)), .packages = 'Matrix', .export = c('model_matrix', 'mat_rank' ) ) %do% {
+    tmp_matrix <- model_matrix[,-ii]
+    tmp_rank <- rankMatrix(tmp_matrix, method = 'qrLINPACK') #lowlevel call
+    if(tmp_rank == mat_rank){
+      model_matrix <- tmp_matrix
+    }
+  }
+  # for(ii in 1:length(var_names)){
+  #   tmp_matrix <- model_matrix[,-ii]
+  #   tmp_rank <- rankMatrix(tmp_matrix)
+  #   if(tmp_rank == mat_rank){ #if rank unchanged with removal
+  #     model_matrix <- model_matrix[,-ii]
+  #   }
+  #   else{
+  #     next; #skip to next iteration
+  #   }
+  # }
+  # for(jj in 1:ncol(model_matrix)){
+  #
+  #   tmp_matrix <- model_matrix[,-jj]
+  #   tmp_rank <- rankMatrix(tmp_matrix)
+  #   if(tmp_rank == mat_rank){
+  #     model_matrix <- tmp_matrix
+  #     }
+  #
+  # }
+
   final_matrix <- cbind(outcome, model_matrix)
   removed_ii <- (!(colnames(dat[,-1]) %in% colnames(model_matrix)))
   removed_vars <- colnames(dat[,-1])[removed_ii]
