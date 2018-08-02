@@ -11,9 +11,43 @@ library(replyr) #for coalesce to fill in missing crossprods
 dat <- ed2_human()
 
 #test country codes
-country_codes <- c("BD", "TH", "CN")
+country_codes <- c("BD", "TH")
 #test texa types
 taxa_types <- c('rodents', "bats", 'nhp', 'swine', 'poultry')
+
+all_contaxa_dat <- dat %>%
+  reshape_contaxa_data(taxa = taxa_types) %>%
+  group_by(contx_type, taxa_type) %>%
+  count() %>%
+  ungroup()
+
+
+BDTH_demo_dat <-
+  dat %>%
+  select_country_dat(country_codes = country_codes) %>%
+  select_demo_dat()
+
+BDTH_country <-
+  dat %>%
+  select_country_dat(country_code = country_codes) %>%
+  get_country_codes() %>%
+  select(participant_id, country)
+
+BDTH_demo_dat <- join(BDTH_demo_dat, BDTH_country, by='participant_id')
+
+BDTH_country_grouped <-
+  BDTH_join %>%
+  calc_percent_repondents_by_var(demo_dat = BDTH_demo_dat,
+                                 var='country')
+
+BDTH_country_full <-
+  BDTH_country_grouped %>%
+  expand_contaxa_by_var(var_name = 'country')
+
+BDTH_country_annotated <-
+  BDTH_country_full %>%
+  annotate_factor_with_n(var_name = 'country',
+                         demo_dat = BDTH_demo_dat)
 
 #BD contaxa data
 BD_contaxa_dat <-
@@ -34,6 +68,8 @@ BD_concurrent_grouped <-
   BD_join_dat %>%
   calc_percent_repondents_by_var(demo_dat = BD_demo,
                                  var_name = 'concurrent_sampling_site')
+
+
 
 BD_occupation_grouped <-
   BD_join_dat %>%
@@ -84,9 +120,10 @@ library(viridis)
 library(RColorBrewer)
 library(colorRamps)
 
-BD_age_annotated %>%  plot_contaxa_heatmap(strat = 'age_quint_range',
+BD_occupation_annotated %>%
+  plot_contaxa_heatmap(strat = 'occupation',
                                            human_dat = dat %>%
-                                             select_country_dat(country_codes = 'BD'))
+                                             select_country_dat(country_codes = 'BD'), wrap_contact = T)
 #########################################################################################
 ##################################LASSO Pipeline#########################################
 ### from model_fit_funs.R
@@ -139,111 +176,203 @@ cat('Rank matches number of columns?',
     ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix))
 
 
-#create matrix of
-ili_x_matrix <- model.matrix(outcome ~ (.)^2 + ., data = data.frame(res$model_data_matrix) )
 ############################# LASSO Regularized Logistic Regression ##########################
+#import reduced two way matrix
+res2 <- readRDS('./data/ili_reduced_matrix.rds')
+res2_reduced <- remove_duplicate_columns(res2$model_data_matrix[,-1])
 
-#illness_model_dat_split <- train_test_split(illness_model_dat)
-#get optimal lambda
-lambda.fit <- cv.glmnet(x = res$model_data_matrix[,-1] ,
-                        y = res$model_data_matrix[,1] ,
-                        nfolds = , #5-fold CV
-                        family = 'binomial',
-                        #lambda = sapply(1:20, function(x) 2^(-x)),
-                        alpha = 1) #LASSO regularize
-plot(lambda.fit)
-cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
 
-lam <- lambda.fit$lambda.min
+
+#create two way interaction model matrix from reduced one way matrix
+ili_x_matrix <- model.matrix(outcome ~ ., data = data.frame(data.matrix(ili_model_dat) ))
+ili_x_reduced <- remove_duplicate_columns(ili_x_matrix) #remove duplicates
+
+
+set.seed(99) #wayne gretsky
+#' perform cross-validation to get optimal lambda (shrinkage) parameter
+#'
+#' @param model_matrix model matrix (features, no response) to be used for logistic regression
+#' @param reponse vector of response values (binary) for logisitic regression
+#' @param cv_folds number of folds for cross_validation
+#' @param verbose logical indicating wheter to print lambda to std output
+#' @return lambda which minimizes the binomial deviance
+#' @author matteo-V
+#' @importFrom glmnet cv.glmnet plot.cv.glmnet
+#' @noRd
+cv_shrinkage_param <- function(model_matrix, response, cv_folds=5, verbose = F){
+  lambda.fit <- cv.glmnet(x = model_matrix,
+                          y = response ,
+                          nfolds = cv_folds, #5-fold CV
+                          family = 'binomial',
+                          alpha = 1) #LASSO regularize
+  #plot bias variance tradeoff curve
+  plot(lambda.fit)
+  #print value of minimum lambda
+  if(verbose){
+    cat('Minimum value of lambda by 5-fold CV:', lambda.fit$lambda.min)
+  }
+  #select minimum lam
+  lam <- lambda.fit$lambda.min
+  return(lam)
+}
+
+lam <- cv_shrinkage_param(ili_x_reduced, response = ili_model_dat[,1])
 n <- length(ili_model_dat[,1])
 
 #create model matrix
-ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
+#ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
 
-#fit glmnet with optimal lambda on training data
-lasso.fit <- glmnet(x = res$model_data_matrix[,-1],
-                    y = as.logical(ili_model_dat[,1]), #fit using logical labels
-                    family = 'binomial',
-                    lambda = lam , #use CV'd lambda.min
-                    alpha = 1,  #LASSO
-                    standardize = T,
-                    thresh = 1e-25)
+#' fit glmnet with optimal lambda on training data
+#'
+#' @param model_matrix model matrix of features (no response column) for logisitc regression
+#' @param response response vector (binary)
+#' @return fitted glmnet object
+#' @author matteo-V
+#' @importFrom glmnet glmnet
+#' @export
+fit_lasso_model <- function(model_matrix, response){
+  #get optimal lambda
+  lam <- cv_shrinkage_param(model_matrix, response)
+  #fir lasso model
+  lasso.fit <- glmnet(x = model_matrix,
+                      y = response, #fit using logical labels
+                      family = 'binomial',
+                      lambda = lam, #use CV'd lambda.min
+                      alpha = 1,  #LASSO
+                      standardize = F,
+                      thresh = 1e-30)
+  return(lasso.fit)
+}
+
+lasso.fit <- fit_lasso_model(ili_x_reduced, response = ili_model_dat[,1])
 #summarize model
-# lasso.fit
-#get non-zero coefficients
-exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),])
+#get non-zero coefficients odds ratios
+#exp( coef(lasso.fit)[which( coef(lasso.fit) != 0),] )
 
-#get class predictions
-lasso.pred <- predict(lasso.fit,
-                      newx = res$model_data_matrix[,-1],
-                      type = 'class')
+#' Computes misclassification rate of a fitted lasso model
+#' @param lasso_fit from fit_lasso_model function
+#' @param model_matrix heldout model matrix of features
+#' @param response response (y) vector
+#' @author matteo-V
+#' @importFrom glmnet predict.glmnet
+#' @export
+compute_lasso_performance <- function(lasso_fit, model_matrix, response){
+  #get class predictions
+  pred <- predict(lasso_fit,
+                        newx = model_matrix,
+                        type = 'class')
 
+  pred <- as.logical(pred)
+  #get misclassification rate
+  lasso.conf.matrix <- table(pred, response)
+  cat('Confusion Matrix:\n')
+  print(lasso.conf.matrix)
+  #get misclassification rate
+  misclass_rate <- 1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
+  cat("\nMisclassification rate:", misclass_rate)
+  #compute sensitivity
+  sens <- lasso.conf.matrix[2,2] / (lasso.conf.matrix[2,2] + lasso.conf.matrix[1,2])
+  cat("\nFalse negative rate:", 1 - sens)
+  #compute specificity
+  specif <- lasso.conf.matrix[1,1] / (lasso.conf.matrix[1,1] + lasso.conf.matrix[2,1])
+  cat("\nFalse positive rate:", 1 - specif)
+}
 
-#get misclassification rate
-lasso.conf.matrix <- table(ili_model_dat[,1], as.factor(lasso.pred))
-lasso.conf.matrix
-1 - ( sum(diag(lasso.conf.matrix)) / sum(lasso.conf.matrix))
+#' Perform Inference on fitted lasso model
+#'
+#' @param lasso_fit from fit_lasso_model
+#' @param model_matrix model matrix of features
+#' @param response vector of response values
+#' @return formatted LASSO inference table (variable, mean odds ration, 95% ci, p-values)
+#' @author matteo-V
+#' @importFrom stats coef
+#' @importFrom selectiveInference fixedLassoInf
+#' @export
+perform_lasso_inference <- function(lasso_fit, model_matrix, response){
+  cat("WARNING: This function may take a while to execute fully")
+  #get lambda and N
+  lam <- lasso_fit$lambda
+  n <- length(response)
+  #get betas
+  betas <- coef(lasso_fit,
+                s = lam/n, #glmnet multiplies the first term by a factor of 1/n
+                exact = T,
+                x = model_matrix,
+                y = as.factor( response )) #[-1] removes the intercept
 
+  #perform inference for glmnet (LASSO) model
+  lasso.inference <-
+    fixedLassoInf(x = model_matrix,
+                  y = as.logical( response )*1 ,
+                  beta = betas,
+                  lambda = lam,
+                  family = 'binomial',
+                  gridrange = c(-1e6, 1e6),
+                  tol.kkt = 1)
 
-#glmnet multiplies the first term by a factor of 1/n
-betas = coef(lasso.fit,
-             s = lam/n,
-             exact = T,
-             x = res$model_data_matrix[,-1] ,
-             y = as.factor( ili_model_dat[,1] ))[-1] #[-1] removes the intercept
+  #variables names for output
+  var_names <- names(lasso.inference$vars)
 
-#perform inference for glmnet (LASSO) model
-lasso.inference <-
-  fixedLassoInf(x = res$model_data_matrix[,-1],
-                y = as.logical( ili_model_dat[,1] )*1 ,
-                beta = betas,
-                lambda = lam
-  )
+  #mean effect sizes
+  effects <- lasso.inference$coef0
 
-#variables names for output
-var_names <- names(lasso.inference$vars)
+  #lower CI bound
+  lower_ci <- lasso.inference$ci[,1]
+  upper_ci <- lasso.inference$ci[,2]
 
-#mean effect sizes
-effects <- lasso.inference$coef0[,1]
+  #pvalues
+  pvalues <- lasso.inference$pv
 
-#lower CI bound
-lower_ci <- lasso.inference$ci[,1]
-upper_ci <- lasso.inference$ci[,2]
+  #create table
+  lasso_inference_table <- data_frame(var_names = var_names,
+                                      effect_size=effects,
+                                      lower=lower_ci,
+                                      upper=upper_ci,
+                                      pvalues=pvalues)
 
-#pvalues
-pvalues <- lasso.inference$pv
+  #annotate significant values
+  lasso_inference_table$significant <- (lasso_inference_table$pvalues < 0.05)
 
-#create table
-lasso_inference_table <- data_frame(var_names = var_names,
-                                    effect_size=effects,
-                                    lower=lower_ci,
-                                    upper=upper_ci,
-                                    pvalues=pvalues)
+  #convert to odds ratios
+  lasso_inference_table <-
+    lasso_inference_table %>%
+    mutate_at(.vars = vars(effect_size, lower, upper), .funs = funs(exp)) %>%
+    mutate(var_names = str_replace_all(var_names, '_', ' '))
 
-#annotate significant values
-lasso_inference_table$significant <- (lasso_inference_table$pvalues < 0.05)
+  return(lasso_inference_table)
 
-#convert to odds ratios
-lasso_inference_table <-
-  lasso_inference_table %>%
-  mutate_at(.vars = vars(effect_size, lower, upper), .funs = funs(exp)) %>%
-  mutate(var_names = str_replace_all(var_names, '_', ' '))
+}
+
 
 #subset significant variables
-sig_lasso_inference <- subset(lasso_inference_table, significant == T)
-sig_lasso_inference <- sig_lasso_inference[order(sig_lasso_inference$effect_size, decreasing = F),]
-var_order <- sig_lasso_inference$var_names
+# sig_lasso_inference <- subset(lasso_inference_table, significant == T)
+# sig_lasso_inference <- sig_lasso_inference[order(sig_lasso_inference$effect_size, decreasing = F),]
+# var_order <- sig_lasso_inference$var_names
 
-#plot things
-ggplot(data = lasso_inference_table, aes(y = var_names, x = effect_size)) +
-  geom_point(aes(color = var_names), cex = 4) +
-  geom_errorbarh(aes(xmin = lower, xmax=upper, color = var_names), lwd=0.8) +
-  geom_vline(aes(xintercept = 1), lty=2, color = 'black', alpha = 0.8) +
-  ggtitle('ILI in BD: Variable Odds Ratios') +
-  scale_color_discrete(guide=F) +
-  theme_bw() +
-  xlab('Odds Ratio') +
-  theme(plot.title = element_text(size=16, hjust=0.5),
-        axis.title.y = element_blank(),
-        axis.title.x = element_text(size=14))
+#' plot output from perform_lasso_inference
+#'
+#' @param lasso_inference_table from perform_lasso_inference function
+#' @param title desired plot title
+#' @return ggplot2 object
+#' @import ggplot2
+#' @export
+plot_lasso_inference <- function(lasso_inference_table, title=NULL){
+  #plot pretty things
+  out.plot <-
+    ggplot(data = lasso_inference_table, aes(y = var_names, x = effect_size)) +
+    geom_point(aes(color = var_names), cex = 4) +
+    geom_errorbarh(aes(xmin = lower, xmax=upper, color = var_names), lwd=0.8) +
+    geom_vline(aes(xintercept = 1), lty=2, color = 'black', alpha = 0.8) +
+    ggtitle(title) +
+    scale_color_discrete(guide=F) +
+    scale_x_continuous(limits = c(0, 100)) +
+    theme_bw() +
+    xlab('Odds Ratio') +
+    theme(plot.title = element_text(size=16, hjust=0.5),
+          axis.title.y = element_blank(),
+          axis.title.x = element_text(size=14))
+  return(out.plot)
+  }
+
+
 
