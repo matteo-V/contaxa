@@ -492,15 +492,27 @@ remove_colinear_columns <- function(dat){
   return(list(removed_vars = removed_vars, model_data_matrix = final_matrix))
 }
 
-# #test function
-# res <- ili_model_dat %>% remove_colinear_columns()
-#
-# #output logical test that algo works
-# cat('Rank matches number of columns?',
-#     ncol(res$model_data_matrix)==rankMatrix(res$model_data_matrix))
-#
-# #create matrix of
-# ili_x_matrix <- model.matrix(outcome ~ . + (.)^2, data = data.frame(res$model_data_matrix) )
+#' De-duplicate matrix columns
+#' @param model_matrix from which to remove duplicates
+#' @return matrix with duplicated columns removed for lasso and inference
+#' @author matteo-V
+#' @importFrom base apply duplicated.default any
+#' @export
+remove_duplicate_columns <- function(model_matrix){
+  model_matrix <- model_matrix[,
+                               !duplicated.default(
+                                 apply(model_matrix, 2,
+                                       function(x) {
+                                         if(any(!(x %in% c(0,1))))
+                                           return(list(x))
+                                         else if(x[1]) {
+                                           return(list(as.logical(x)))
+                                         } else {
+                                           return(list(!x))
+                                         }
+                                       }))]
+  return(model_matrix)
+}
 # ############################# LASSO Regularized Logistic Regression ##########################
 #
 # #illness_model_dat_split <- train_test_split(illness_model_dat)
