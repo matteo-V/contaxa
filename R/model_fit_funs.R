@@ -75,6 +75,7 @@ get_clean_exposures <- function(dat, taxa_names){
 #' @importFrom eidith ed2_expand_wide
 get_clean_illness_covariates <- function(dat){
   #select and widen covariate data
+
   dat %>%
   select(-(matches("_contact"))) %>% #remove multiresponse contact cols
   select(participant_id, #select all covar data
@@ -87,9 +88,7 @@ get_clean_illness_covariates <- function(dat){
          primary_livelihood, #these are to build occupations variable.
          livelihood_groups_other, #use this to disambiguate the other categories
          matches("animals"),
-         live_state_prov,
          dedicated_location_for_waste,
-         work_location_prov,
          #had_symptoms_in_last_year_other_people,
          -matches("_notes"), #remove notes cols,
          matches("meat"),
@@ -200,7 +199,6 @@ get_clean_illness_covariates <- function(dat){
          )
   #scale and center numeric variables to mean 0 and sd 1
   #mutate_if(is.numeric, scale())
-
 }
 
 ####################################################################################
@@ -396,7 +394,11 @@ train_test_split <- function(dat){
 #' @export
 get_illness_analysis_dat <- function(dat,
                                        outcome_var,
-                                       taxa_names = c('rodents', 'nhp', 'bats', 'swine', 'poultry')){
+                                       taxa_names = c('rodents',
+                                                      'nhp',
+                                                      'bats',
+                                                      'swine',
+                                                      'poultry')){
 
   #outcome var name
   outcome_var_name <-
@@ -429,6 +431,7 @@ get_illness_analysis_dat <- function(dat,
     select(-participant_id) #drop key variable for analysis
 
   #return analysis frame
+  colnames(analysis_dat)[1] <- outcome_var
   analysis_dat
 }
 
@@ -544,7 +547,7 @@ cv_shrinkage_param <- function(model_matrix, response, cv_folds=5, verbose = F, 
                           y = response ,
                           nfolds = cv_folds, #5-fold CV
                           family = 'binomial',
-                          lambda = 10^-(seq(1, 2, by=0.005)),
+                          #lambda = 10^-(seq(1, 2, by=0.005)),
                           alpha = 1) #LASSO regularize
   #plot bias variance tradeoff curve
   plot(lambda.fit)
