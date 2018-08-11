@@ -7,14 +7,15 @@ illness_model_dat <-
 ############################# Exploratory RF modeling approach ################################
 library(randomForest)
 
-illness_model_dat_split <- train_test_val_split(illness_model_dat)
+illness_model_dat_split <- train_test_split(illness_model_dat)
 
 ili.rf.fit <- randomForest(y = illness_model_dat_split[['train']][,1] ,
                            x = illness_model_dat_split[['train']][,-1],
                            mtry = 26,
                            ntree = 200,
                            importance = T)
-ili.rf.preds <- predict(ili.rf.fit, newdata = illness_model_dat_split[['test']][,-1], type='class')
+ili.rf.preds <- predict(ili.rf.fit,
+                        newdata = illness_model_dat_split[['test']][,-1], type='class')
 rf.conf.matrix <- table(illness_model_dat_split[['test']][,1], ili.rf.preds)
 rf.conf.matrix
 cat('Proportion of respondents with illness:', mean( as.logical(illness_model_dat_split[['test']][,1]) ) )
@@ -37,7 +38,7 @@ ili.gbm.fit <- gbm.fit(y = as.logical(illness_model_dat_gbm[['train']][,1]),
                        shrinkage = 0.0002,
                        n.trees = 10000)
 #predict probs
-gbm.probs <- predict(ili.gbm.fit, type = 'response', newdata = illness_model_dat_gbm[['test']][,-1], n.trees = 10000 )
+gbm.probs <- predict(ili.gbm.fit, type = 'response', newdata = undr_matrix, n.trees = 10000 )
 #and convert to class labels
 gbm.class <- vector(mode = 'logical', length = length(gbm.probs))
 for(i in 1:length(gbm.probs)){
@@ -49,9 +50,10 @@ for(i in 1:length(gbm.probs)){
   }
 }
 #tabulate confusion matrix
-gbm.conf.matrix <- table(as.logical(illness_model_dat_gbm[['test']][,1]), gbm.class)
+gbm.conf.matrix <- table(as.logical(undr_dat[,1]), gbm.class)
+gbm.conf.matrix
 cat('GBM OOS misclassification rate:', 1 - (sum(diag(gbm.conf.matrix)) / sum(gbm.conf.matrix)))
-cat('GBM AUROC:', gbm.roc.area(obs = as.logical(illness_model_dat_gbm[['test']][,1]), pred = gbm.probs))
+cat('GBM AUROC:', gbm.roc.area(obs = as.logical(undr_dat[,1]), pred = gbm.probs))
 ##########################################################################################
 ########################### calculate crossEntropy function ###############################
 #TODO: refactor this to take data sets instead of vectors
@@ -165,4 +167,20 @@ val_dat <- as.h2o( split_dat[['val']] )
 rf_fit <- h2o.randomForest( y = 'poultry_contact_handled',
                             training_frame = train_dat)
 h2o.gainsLift(rf_fit, val_dat )
-########################################################################################################
+############################################################################################association rule mining
+#undr_dat is undersampled positive dataset
+#sample size calc
+c <-  0.1 #90% confidence
+supp <- 0.05
+epsilon <- 0.1
+n <- -2 * log(c)/ (supp * epsilon^2)
+boot <- sample_n(ovr_dat, replace = T, size = n)
+
+ili.rules <- apriori(data=ovr_dat %>%
+                       select(-matches('dwelling')) %>%
+                       select(-matches('prov')) %>%
+                       select(-matches('age')),
+                     parameter=list (supp=0.2,conf = 0.5, maxlen=3),
+                     appearance = list( rhs='ili=TRUE'))
+
+inspect( head(ili.rules, by='confidence', n=10))
