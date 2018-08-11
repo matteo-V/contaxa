@@ -1,7 +1,12 @@
 devtools::load_all()
+library(eidith)
+options(ed_sql_path = "data/PREDICT2data.sqlite")
+library(plyr)
+library(tidyverse)
+library(ggthemes)
 #compute odds ratios
 ili_OR_res <-
-  dat %>%
+  ed2_human() %>%
   select_country_dat(country_codes = c('BD', 'TH')) %>%
   calculate_illness_odds(outcome_var = 'ili')
 
@@ -44,7 +49,11 @@ ggplot(contact_OR,
   facet_grid(taxa_type~., scales = 'free_y') + #for points
   #facet_grid(.~taxa_type, scales = 'free_y') + #for line
   theme_tufte() +
-  theme(strip.text = element_blank())
+  theme(strip.text = element_blank(),
+        plot.title = element_text(hjust=0.5)) +
+  scale_y_continuous(trans='log2') +
+  ggtitle('ILI Contact Risk Factors: BD and TH') + scale_color_manual(name='Taxa Type')
+
 
 #vis odds life
 ggplot(ili_OR_res %>%
