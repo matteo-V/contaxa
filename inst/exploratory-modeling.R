@@ -167,8 +167,19 @@ val_dat <- as.h2o( split_dat[['val']] )
 rf_fit <- h2o.randomForest( y = 'poultry_contact_handled',
                             training_frame = train_dat)
 h2o.gainsLift(rf_fit, val_dat )
-############################################################################################association rule mining
-#undr_dat is undersampled positive dataset
+############################################################################################
+#association rule mining
+library(arules)
+library(arulesCBA)
+
+
+#oversample negative to correct class imbalance
+ovr_neg <- ili_model_dat %>% filter(!as.logical(ili)) %>% sample_n(size = 538-194, replace = T)
+ovr_pos <- ili_model_dat %>% filter(as.logical(ili))
+ovr_dat <- rbind(ovr_pos, ovr_neg)
+ovr_dat_split <- ovr_dat %>% train_test_split()
+
+
 #sample size calc
 c <-  0.1 #90% confidence
 supp <- 0.05
@@ -176,6 +187,7 @@ epsilon <- 0.1
 n <- -2 * log(c)/ (supp * epsilon^2)
 boot <- sample_n(ovr_dat, replace = T, size = n)
 
+#First fit rules
 ili.rules <- apriori(data=ovr_dat %>%
                        select(-matches('dwelling')) %>%
                        select(-matches('prov')) %>%
@@ -184,3 +196,19 @@ ili.rules <- apriori(data=ovr_dat %>%
                      appearance = list( rhs='ili=TRUE'))
 
 inspect( head(ili.rules, by='confidence', n=10))
+#fit rules then rule based classifier
+#induct rules using oversampled position data frame
+ili.rules <- apriori(data=ovr_dat_split$train %>%
+                       select(-matches('in_dwelling')) %>%
+                       select(-matches('prov')) %>%
+                       select(-matches('age')),
+                     parameter=list (supp=0.05,conf = 0.5, maxlen=7),
+                     appearance = list( rhs='ili=TRUE'))
+
+inspect( head(ili.rules, by='confidence', n=10))
+#build rule based classifier via apriori algorithm
+ili.classifier <- CBA(formula = ili ~ . ,
+                      data = data.matrix( ovr_dat_split$train %>%
+                                            select(-matches('in_dwelling')) %>%
+                                            select(-matches('prov')) %>%
+                                            select(-matches('age')) ))
