@@ -157,7 +157,8 @@ calculate_illness_odds <- function(dat, outcome_var){
 
     res <- rbind(res, res_ii)
 
-    }
+  }
+  #bonferroni correction to multiple testing
   res %>%
     mutate(significant = if_else(condition = pvalue < (0.05/length(pvalue)),
                                  true = T,
